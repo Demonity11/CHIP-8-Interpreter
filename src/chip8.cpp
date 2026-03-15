@@ -239,7 +239,7 @@ void printDisplay(const Chip8& cpu) // print the contents of the display array
     }
 }
 
-Chip8 init(std::string romName)
+Chip8 init(std::string& romName)
 {
     Chip8 cpu{};
     

@@ -7,8 +7,29 @@ using namespace std::literals::chrono_literals;
 
 int main()
 {   
+    std::cout << "===== Select your ROM =====\n"
+              << "1 - IBM Logo.ch8\n"
+              << "2 - Airplane.ch8\n"
+              << "3 - Cave.ch8\n"
+              << "4 - Cavern.ch8\n"
+              << "Pong (1 player).ch8\n"
+              << "===========================\n";
+
+    int choice{};
+    std::cin >> choice;
+    std::string filename{};
+
+    switch (choice)
+    {
+    case 1: filename = "IBM Logo.ch8";        break;
+    case 2: filename = "Airplane.ch8";        break;
+    case 3: filename = "Cave.ch8";            break;
+    case 4: filename = "cavern.ch8";          break;
+    case 5: filename = "Pong (1 player).ch8"; break;
+    }
+
     // Chip-8 setup
-    Chip8 cpu{ init("Cave.ch8") };
+    Chip8 cpu{ init(filename) };
     std::vector<std::uint8_t> display(64 * 32 * 4);
     std::uint16_t opcode{};
     
