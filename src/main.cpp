@@ -218,7 +218,7 @@ int main()
             if (!cpu.waitForAKeyPress)
                 opcode = fetch(cpu);
             
-            std::cout << dissambler(opcode) << "\n";
+            std::cout << disassembler(opcode) << "\n";
 
             decode(cpu, opcode);
             cycleAccumulator -= timePerCycle.count();
