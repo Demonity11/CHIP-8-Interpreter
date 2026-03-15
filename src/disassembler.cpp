@@ -9,8 +9,6 @@ std::string hexToString(std::uint16_t hex, int size)
 
     std::string hexString{ "0x" + ss.str() };
 
-    // std::cout << "opcode: " << hexString << "\n";
-
     return hexString;
 }
 
@@ -28,8 +26,6 @@ std::string getOpcodeConvertedToString(std::uint16_t opcode)
 
     std::string hexString{ "0x" + ss.str() };
 
-    // std::cout << "opcode: " << hexString << "\n";
-
     return hexString;
 }
 
@@ -44,7 +40,7 @@ std::string getCallStack(const Chip8& cpu, int index)
     return hexString;
 }
 
-std::string dissambler(std::uint16_t opcode)
+std::string disassembler(std::uint16_t opcode)
 {
     std::uint16_t firstNibble = (opcode >> 12) & 0x000F;
     std::uint16_t lastNibble = opcode & 0x000F;
