@@ -21,8 +21,16 @@ struct Chip8 // the chip 8 cpu works at a clock of 500 instructions per second (
 	std::uint8_t soundTimer{}; // decrements at a frequency established by the programmer (me). not defined yet 
 
 	std::uint8_t display[64 * 32]{}; // a 64x32 display represented by an array of size 2048
-	std::uint8_t keypad[16]{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF}; 
-	// a 16-key keypad, represented by hexadecimal numbers, from 0 to F
+	std::uint8_t keypad[16]{}; // a 16-key keypad, represented by hexadecimal numbers, from 0 to F
+
+	// Chip-8 layout     // mapped to
+	// 	  1 2 3 C      		1 2 3 4
+	//    4 5 6 D 			Q W E R
+	//    7 8 9 E           A S D F
+	//    A 0 B F           Z X C V
+
+	bool waitForAKeyPress{ false };
+	std::uint8_t keyBeingPressed{0xFF}; // 0xFF it will represent the that nothing is being pressed, otherwise it will store a number from 0x to 0xF
 };
 
 // forward declarations for "chip8.cpp"
@@ -60,10 +68,10 @@ void op_9xy0(Chip8& cpu, std::uint16_t opcode);
 void op_Bnnn(Chip8& cpu, std::uint16_t opcode);
 void op_Cxkk(Chip8& cpu, std::uint16_t opcode);
 void op_Dxyn(Chip8& cpu, std::uint16_t opcode);
-void op_Ex9E(Chip8& cpu, std::uint16_t opcode);
-void op_ExA1(Chip8& cpu, std::uint16_t opcode);
+void op_Ex9E(Chip8& cpu, std::uint16_t opcode); 
+void op_ExA1(Chip8& cpu, std::uint16_t opcode); 
 void op_Fx07(Chip8& cpu, std::uint16_t opcode);
-void op_Fx0A(Chip8& cpu, std::uint16_t opcode); // not finished
+void op_Fx0A(Chip8& cpu, std::uint16_t opcode); 
 void op_Fx15(Chip8& cpu, std::uint16_t opcode);
 void op_Fx18(Chip8& cpu, std::uint16_t opcode);
 void op_Fx1E(Chip8& cpu, std::uint16_t opcode);

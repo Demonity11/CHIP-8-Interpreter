@@ -285,7 +285,11 @@ void op_Ex9E(Chip8& cpu, std::uint16_t opcode)
 	std::uint8_t key = cpu.V[x];
 
 	if (key < 16 && cpu.keypad[key])
+	{
+		cpu.keypad[key] = 0x0;
+		cpu.keyBeingPressed = 0xFF;
 		cpu.pc += 2;
+	}
 }
 
 void op_ExA1(Chip8& cpu, std::uint16_t opcode)
@@ -293,8 +297,10 @@ void op_ExA1(Chip8& cpu, std::uint16_t opcode)
 	std::uint16_t x = (opcode & Masks::x) >> 8;
 	std::uint8_t key = cpu.V[x];
 
-	if (key < 16 && !cpu.keypad[key])
+	if (key < 16 && cpu.keypad[key] == 0x0)
+	{
 		cpu.pc += 2;
+	}
 }
 
 void op_Fx07(Chip8& cpu, std::uint16_t opcode)
@@ -305,7 +311,16 @@ void op_Fx07(Chip8& cpu, std::uint16_t opcode)
 
 void op_Fx0A(Chip8& cpu, std::uint16_t opcode)
 {
-	std::cout << "not finished\n";
+	std::uint16_t x = (opcode & Masks::x) >> 8;
+	cpu.waitForAKeyPress = true;
+
+	if (cpu.keyBeingPressed >= 0x0 && cpu.keyBeingPressed <= 0xF)
+	{
+		cpu.V[x] = cpu.keyBeingPressed;
+		cpu.keypad[cpu.keyBeingPressed] = 0x0;
+		cpu.keyBeingPressed = 0xFF;
+		cpu.waitForAKeyPress = false;
+	}
 }
 
 void op_Fx15(Chip8& cpu, std::uint16_t opcode)

@@ -8,8 +8,9 @@ using namespace std::literals::chrono_literals;
 int main()
 {   
     // Chip-8 setup
-    Chip8 cpu{ init("IBM Logo.ch8") };
+    Chip8 cpu{ init("Cave.ch8") };
     std::vector<std::uint8_t> display(64 * 32 * 4);
+    std::uint16_t opcode{};
     
     using Milliseconds = std::chrono::duration<double, std::milli>;
 
@@ -22,6 +23,7 @@ int main()
 
     // SFML setup
     sf::RenderWindow window( sf::VideoMode( { 64, 32 } ), "CHIP-8" );
+    window.setMaximumSize(sf::Vector2u(960, 480));
     sf::Texture texture(sf::Vector2u(64, 32));
 
     while (window.isOpen())
@@ -37,11 +39,181 @@ int main()
 		{
 			if ( event->is<sf::Event::Closed>() )
 				window.close();
+
+            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
+            {
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num1)
+                {
+                    cpu.keyBeingPressed = 0x1;
+                    cpu.keypad[0x1]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num2)
+                {
+                    cpu.keyBeingPressed = 0x2;
+                    cpu.keypad[0x2]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num3)
+                {
+                    cpu.keyBeingPressed = 0x3;
+                    cpu.keypad[0x3]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num4)
+                {
+                    cpu.keyBeingPressed = 0xC;
+                    cpu.keypad[0xC]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Q)
+                {
+                    cpu.keyBeingPressed = 0x4;
+                    cpu.keypad[0x4]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::W)
+                {
+                    cpu.keyBeingPressed = 0x5;
+                    cpu.keypad[0x5]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::E)
+                {
+                    cpu.keyBeingPressed = 0x6;
+                    cpu.keypad[0x6]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::R)
+                {
+                    cpu.keyBeingPressed = 0xD;
+                    cpu.keypad[0xD]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::A)
+                {
+                    cpu.keyBeingPressed = 0x7;
+                    cpu.keypad[0x7]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::S)
+                {
+                    cpu.keyBeingPressed = 0x8;
+                    cpu.keypad[0x8]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::D)
+                {
+                    cpu.keyBeingPressed = 0x9;
+                    cpu.keypad[0x9]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::F)
+                {
+                    cpu.keyBeingPressed = 0xE;
+                    cpu.keypad[0xE]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Z)
+                {
+                    cpu.keyBeingPressed = 0xA;
+                    cpu.keypad[0xA]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::X)
+                {
+                    cpu.keyBeingPressed = 0x0;
+                    cpu.keypad[0x0]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::C)
+                {
+                    cpu.keyBeingPressed = 0xB;
+                    cpu.keypad[0xB]= 0x1;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::V)
+                {
+                    cpu.keyBeingPressed = 0xF;
+                    cpu.keypad[0xF]= 0x1;
+                }
+            }
+
+            if (const auto* keyPressed = event->getIf<sf::Event::KeyReleased>())
+            {
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num1)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x1]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num2)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x2]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num3)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x3]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Num4)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0xC]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Q)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x4]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::W)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x5]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::E)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x6]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::R)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0xD]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::A)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x7]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::S)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x8]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::D)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x9]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::F)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0xE]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::Z)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0xA]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::X)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0x0]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::C)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0xB]= 0x0;
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scan::V)
+                {
+                    cpu.keyBeingPressed = 0xFF;
+                    cpu.keypad[0xF]= 0x0;
+                }
+            }
 		}
 
         while (cycleAccumulator >= timePerCycle.count()) // fetch-decode-execute cycle at 500 Hz
         {
-            std::uint16_t opcode = fetch(cpu);
+            if (!cpu.waitForAKeyPress)
+                opcode = fetch(cpu);
+
             decode(cpu, opcode);
             cycleAccumulator -= timePerCycle.count();
         }
@@ -64,8 +236,7 @@ int main()
         
             timerAccumulator -= timePerTimer.count();
         }
-
-        // std::this_thread::sleep_for(1ms);
+        std::this_thread::sleep_for(1ms);
     }
 
     return 0;
