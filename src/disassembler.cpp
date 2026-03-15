@@ -14,6 +14,12 @@ std::string hexToString(std::uint16_t hex, int size)
     return hexString;
 }
 
+std::string getRegisterName(std::uint16_t regIndex)
+{
+    const char* hexDigits{ "0123456789ABCDEF" };
+    return std::string("V") + hexDigits[regIndex & 0xF];
+}
+
 std::string getOpcodeConvertedToString(std::uint16_t opcode)
 {
     std::stringstream ss{};
@@ -38,7 +44,7 @@ std::string getCallStack(const Chip8& cpu, int index)
     return hexString;
 }
 
-void dissambler(const Chip8& cpu, std::uint16_t opcode)
+std::string dissambler(std::uint16_t opcode)
 {
     std::uint16_t firstNibble = (opcode >> 12) & 0x000F;
     std::uint16_t lastNibble = opcode & 0x000F;
@@ -51,131 +57,296 @@ void dissambler(const Chip8& cpu, std::uint16_t opcode)
         if (opcode == 0x00E0) instruction += " - CLS";
         if (opcode == 0x00EE) instruction += " - RET";
 
-        break;
+        return instruction;
 
     case 0xA: 
     {
-        std::string nnn{ hexToString(opcode & Masks::nnn, 3) };
+        const std::string nnn{ hexToString(opcode & Masks::nnn, 3) };
+        
         instruction += " - LD I, " + nnn; 
-        break;
+        return instruction;
     }
 
     case 0x1: 
     {
-        std::string nnn{ hexToString(opcode & Masks::nnn, 3) };
+        const std::string nnn{ hexToString(opcode & Masks::nnn, 3) };
+        
         instruction += " - JP " + nnn; 
-        break;
+        return instruction;
     }
 
     case 0x2: 
     {
-        std::string nnn{ hexToString(opcode & Masks::nnn, 3) };
+        const std::string nnn{ hexToString(opcode & Masks::nnn, 3) };
+        
         instruction += " - CALL " + nnn; 
-        break;
+        return instruction;
     }
 
     case 0x3: 
     {
-        std::uint16_t regIndex = (opcode & Masks::x) >> 8;
-        
-        std::stringstream ss{};
-        ss << std::hex << std::uppercase << regIndex;
-        
-        std::string kk{ hexToString(opcode & Masks::kk, 2) };
-        instruction += " - SE V" + ss.str() + ", " + kk;
-        break;
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string kk{ hexToString(opcode & Masks::kk, 2) };
+
+        instruction += " - SE " + regX + ", " + kk;
+        return instruction;
     }
 
     case 0x4: 
     {
-        std::uint16_t regIndex = (opcode & Masks::x) >> 8;
-
-        std::stringstream ss{};
-        ss << std::hex << std::uppercase << regIndex;
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string kk{ hexToString(opcode & Masks::kk, 2) };
         
-        std::string kk{ hexToString(opcode & Masks::kk, 2) };
-        
-        instruction += " - SNE V" + ss.str() + ", " + kk;
-        break;
+        instruction += " - SNE " + regX + ", " + kk;
+        return instruction;
     }
     
     case 0x5: 
     {
-        std::uint16_t regIndexX = (opcode & Masks::x) >> 8;
-        std::uint16_t regIndexY = (opcode & Masks::y) >> 4;
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
 
-        std::stringstream ssX{};
-        std::stringstream ssY{};
-
-        ssX << std::hex << std::uppercase << regIndexX;
-        ssY << std::hex << std::uppercase << regIndexY;
-
-        instruction += " - SE V" + ssX.str() + ", V" + ssY.str();
-        break;
-
+        instruction += " - SE " + regX + ", " + regY;
+        return instruction;
     }
 
-    case 0x6: op_6xkk(cpu, opcode); break;
+    case 0x6: 
+    {
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string kk{ hexToString(opcode & Masks::kk, 2) };
 
-    case 0x7: op_7xkk(cpu, opcode); break;
+        instruction += " - LD " + regX + ", " + kk;  
+        return instruction;
+    }
+
+    case 0x7: 
+    {
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string kk{ hexToString(opcode & Masks::kk, 2) };
+
+        instruction += " - ADD " + regX + ", " + kk;  
+        return instruction;
+    }
     
     case 0x8:
         switch (lastNibble)
         {
-        case 0x0: op_8xy0(cpu, opcode); break;
+        case 0x0: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
 
-        case 0x1: op_8xy1(cpu, opcode); break;
+            instruction += " - LD " + regX + ", " + regY;
+            return instruction;
+        }
+
+        case 0x1: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
+
+            instruction += " - OR " + regX + ", " + regY;
+            return instruction;
+        }
         
-        case 0x2: op_8xy2(cpu, opcode); break;
+        case 0x2: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
+
+            instruction += " - AND " + regX + ", " + regY;
+            return instruction;
+        }
             
-        case 0x3: op_8xy3(cpu, opcode); break;
+        case 0x3: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
 
-        case 0x4: op_8xy4(cpu, opcode); break;
+            instruction += " - XOR " + regX + ", " + regY;
+            return instruction;
+        }
 
-        case 0x5: op_8xy5(cpu, opcode); break;
+        case 0x4: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
 
-        case 0x6: op_8xy6(cpu, opcode); break;
+            instruction += " - ADD " + regX + ", " + regY;
+            return instruction;
+        }
 
-        case 0x7: op_8xy7(cpu, opcode); break;
+        case 0x5: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
 
-        case 0xE: op_8xyE(cpu, opcode); break;
+            instruction += " - SUB " + regX + ", " + regY;
+            return instruction;
+        }
+
+        case 0x6: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
+
+            instruction += " - SHR " + regX + "{, " + regY + "}";
+            return instruction;
+        }
+
+        case 0x7: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
+
+            instruction += " - SUBN " + regX + ", " + regY;
+            return instruction;
+        }
+
+        case 0xE: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
+
+            instruction += " - SHL " + regX + "{, " + regY + "}";
+            return instruction;
+        }
         }
         break;
 
-    case 0x9: op_9xy0(cpu, opcode); break;
+    case 0x9: 
+    {
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
 
-    case 0xB: op_Bnnn(cpu, opcode); break;
+        instruction += " - SNE " + regX + ", " + regY;
+        return instruction;
+    }
 
-    case 0xC: op_Cxkk(cpu, opcode); break;
+    case 0xB: 
+    {
+        const std::string nnn{ hexToString(opcode & Masks::nnn, 3) };
 
-    case 0xD: op_Dxyn(cpu, opcode); break;
+        instruction += " - JP V0, " + nnn;
+        return instruction;
+    }
+
+    case 0xC: 
+    {
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string kk{ hexToString(opcode & Masks::kk, 2) };
+
+        instruction += " - RND " + regX + ", " + kk;
+        return instruction;
+    }
+
+    case 0xD: 
+    {
+        const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+        const std::string regY{ getRegisterName((opcode & Masks::y) >> 4) };
+        const std::string n{ hexToString(opcode & Masks::n, 1) };
+
+        instruction += " - DRW " + regX + ", " + regY + ", " + n;
+        return instruction;
+    }
     
     case 0xE:
-        if (lastNibble == 0xE) op_Ex9E(cpu, opcode);
-        if (lastNibble == 0x1) op_ExA1(cpu, opcode);
+        if (lastNibble == 0xE) 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            
+            instruction += " - SKP " + regX;
+        }
+
+        if (lastNibble == 0x1) 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+            
+            instruction += " - SKNP " + regX;
+        }
         
-        break;
+        return instruction;
 
     case 0xF:
         switch (opcode & 0x00FF)
         {
-        case 0x07: op_Fx07(cpu, opcode); break;
+        case 0x07: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
 
-        case 0x0A: op_Fx0A(cpu, opcode); break;
-
-        case 0x15: op_Fx15(cpu, opcode); break;
-
-        case 0x55: op_Fx55(cpu, opcode); break;
-
-        case 0x65: op_Fx65(cpu, opcode); break;
-
-        case 0x18: op_Fx18(cpu, opcode); break;
-
-        case 0x1E: op_Fx1E(cpu, opcode); break;
-
-        case 0x29: op_Fx29(cpu, opcode); break;
-
-        case 0x33: op_Fx33(cpu, opcode); break;
+            instruction += " - LD " + regX + ", DT";
+            return instruction;
         }
+
+        case 0x0A: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - LD " + regX + ", K";
+            return instruction;
+        }
+
+        case 0x15: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - LD DT, " + regX;
+            return instruction;
+        }
+
+        case 0x55: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - LD [I], " + regX;
+            return instruction;
+        }
+
+        case 0x65: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - LD " + regX + ", [I]";
+            return instruction;
+        }
+
+        case 0x18: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - LD ST, " + regX;
+            return instruction;
+        }
+
+        case 0x1E: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - ADD I, " + regX;
+            return instruction;
+        }
+
+        case 0x29: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - LD F, " + regX;
+            return instruction;
+        }
+
+        case 0x33: 
+        {
+            const std::string regX{ getRegisterName((opcode & Masks::x) >> 8) };
+
+            instruction += " - LD B, " + regX;
+            return instruction;
+        }
+        }
+
+    default:
+    {
+        return std::string("???");
     }
+    }
+    return std::string("???");
 }

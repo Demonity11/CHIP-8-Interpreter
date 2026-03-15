@@ -90,4 +90,11 @@ void op_Fx33(Chip8& cpu, std::uint16_t opcode);
 void op_Fx55(Chip8& cpu, std::uint16_t opcode);
 void op_Fx65(Chip8& cpu, std::uint16_t opcode);
 
+// forward declarations for disassembler.cpp
+auto hexToString(std::uint16_t hex, int size) 		  -> std::string;
+auto getRegisterName(std::uint16_t regIndex)  		  -> std::string;
+auto getOpcodeConvertedToString(std::uint16_t opcode) -> std::string;
+auto getCallStack(const Chip8& cpu, int index) 		  -> std::string;
+auto dissambler(std::uint16_t opcode) 				  -> std::string;
+
 #endif
