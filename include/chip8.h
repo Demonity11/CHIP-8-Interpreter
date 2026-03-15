@@ -29,7 +29,7 @@ struct Chip8 // the chip 8 cpu works at a clock of 500 instructions per second (
 	//    7 8 9 E           A S D F
 	//    A 0 B F           Z X C V
 
-	bool waitForAKeyPress{ false };
+	bool waitForAKeyPress{ false }; // when this is true, the program should stop the pc until a key is pressed
 	std::uint8_t keyBeingPressed{0xFF}; // 0xFF it will represent the that nothing is being pressed, otherwise it will store a number from 0x to 0xF
 };
 

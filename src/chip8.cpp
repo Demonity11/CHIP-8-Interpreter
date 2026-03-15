@@ -223,14 +223,6 @@ std::vector<std::uint8_t> getDisplay(const Chip8& cpu)
         }
     }
 
-    // for (int i{ 0 }; i < 64 * 32; ++i)
-    // {
-    //     std::cout << (display.at(i*4) == 255 ? static_cast<char>(219) : ' '); // 219 = █ in ASCII Table
-
-    //     if ((i + 1) % 64 == 0)
-    //         std::cout << "\n"; // ends line when each row is printed
-    // }
-
     return display;
 }
 

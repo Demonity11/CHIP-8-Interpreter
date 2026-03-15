@@ -21,10 +21,14 @@ int main()
     double timerAccumulator{ 0.0 };
     double cycleAccumulator{ 0.0 };
 
+    // window size and scale multiplier
+    constexpr int wWidth{ 64 };
+    constexpr int wHeight{ 32 };
+    constexpr int wScale{ 15 };
+
     // SFML setup
-    sf::RenderWindow window( sf::VideoMode( { 64, 32 } ), "CHIP-8" );
-    window.setMaximumSize(sf::Vector2u(960, 480));
-    sf::Texture texture(sf::Vector2u(64, 32));
+    sf::RenderWindow window( sf::VideoMode( { wWidth * wScale, wHeight * wScale} ), "CHIP-8" );
+    sf::Texture texture(sf::Vector2u(wWidth, wHeight));
 
     while (window.isOpen())
     {
@@ -221,11 +225,15 @@ int main()
         display = getDisplay(cpu);
         texture.update(display.data());
         sf::Sprite sprite(texture);
+        sprite.setScale(sf::Vector2f(wScale, wScale));
 
         while (timerAccumulator >= timePerTimer.count()) // decrement timers and update screen at 60 Hz
         {
-            if (cpu.delayTimer > 0) cpu.delayTimer--;
-            if (cpu.soundTimer > 0) {
+            if (cpu.delayTimer > 0) 
+                cpu.delayTimer--;
+
+            if (cpu.soundTimer > 0) 
+            {
                 cpu.soundTimer--;
                 // bips in the future
             }
@@ -236,6 +244,7 @@ int main()
         
             timerAccumulator -= timePerTimer.count();
         }
+        
         std::this_thread::sleep_for(1ms);
     }
 
