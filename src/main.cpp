@@ -12,7 +12,7 @@ int main()
               << "2 - Airplane.ch8\n"
               << "3 - Cave.ch8\n"
               << "4 - Cavern.ch8\n"
-              << "Pong (1 player).ch8\n"
+              << "5 - Pong (1 player).ch8\n"
               << "===========================\n";
 
     int choice{};
@@ -26,7 +26,7 @@ int main()
     case 3: filename = "Cave.ch8";            break;
     case 4: filename = "cavern.ch8";          break;
     case 5: filename = "Pong (1 player).ch8"; break;
-    
+
     default: filename = "IBM Logo.ch8";       break;
     }
 

@@ -50,7 +50,7 @@ auto loadFontSprites(Chip8& cpu)                      				 -> void;
 auto clearMemory(Chip8& cpu) 						  				 -> void;
 auto printROM(const Chip8& cpu, int fileSize) 		  				 -> void;
 auto printDisplay(const Chip8& cpu) 				  				 -> void;
-auto init(std::string romName) 						  				 -> Chip8;
+auto init(std::string& romName) 						  				 -> Chip8;
 auto getDisplay(const Chip8& cpu) 									 -> std::vector<std::uint8_t>;
 auto getOpcodeConvertedToString(std::uint16_t opcode)                -> std::string;
 
