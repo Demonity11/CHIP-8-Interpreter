@@ -5,6 +5,13 @@
 
 using namespace std::literals::chrono_literals;
 
+struct FPS
+{
+    double accumulator{ 0 };
+    int frames{ 0 };
+    double average{};
+};
+
 int main()
 {   
     std::cout << "===== Select your ROM =====\n"
@@ -44,6 +51,8 @@ int main()
     double timerAccumulator{ 0.0 };
     double cycleAccumulator{ 0.0 };
 
+    FPS fps{};
+
     // window size and scale multiplier
     constexpr int wWidth{ 64 };
     constexpr int wHeight{ 32 };
@@ -51,7 +60,23 @@ int main()
 
     // SFML setup
     sf::RenderWindow window( sf::VideoMode( { wWidth * wScale, wHeight * wScale} ), "CHIP-8" );
+    // window.setFramerateLimit(60);
+
     sf::Texture texture(sf::Vector2u(wWidth, wHeight));
+
+    sf::Font font{};
+
+    if (!font.openFromFile("../PressStart2P-Regular.ttf")) 
+    {
+        std::cerr << "Error loading font.\n";
+        return -1; // Error loading
+    }
+
+    sf::Text fpsCounter(font);
+
+    fpsCounter.setCharacterSize(10);
+    fpsCounter.setFillColor(sf::Color::Green);
+    fpsCounter.setPosition(sf::Vector2f(10, (wHeight * wScale) - 20));
 
     while (window.isOpen())
     {
@@ -62,6 +87,19 @@ int main()
         timerAccumulator += dt.count(); // increments the elapsed time per loop
         cycleAccumulator += dt.count(); 
 
+        // FPS counter logic
+        fps.accumulator += dt.count();
+
+        if (fps.accumulator >= 1000.0)
+        {
+            fps.average = (fps.frames * 1000) / fps.accumulator;
+            
+            fpsCounter.setString(getFPS(fps.average));
+
+            fps.frames = 0;
+            fps.accumulator -= 1000.0;
+        }
+
         while ( const std::optional event = window.pollEvent() )
 		{
 			if ( event->is<sf::Event::Closed>() )
@@ -69,6 +107,16 @@ int main()
 
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
             {
+                if (keyPressed->scancode == sf::Keyboard::Scan::R) // reload the game: this is for games that freeze when you lose.
+                {
+                    cpu = init(filename);
+
+                    timerAccumulator = 0;
+                    cycleAccumulator = 0;
+                    fps.accumulator = 0;
+                    fps.frames = 0;
+                }
+
                 if (keyPressed->scancode == sf::Keyboard::Scan::Num1)
                 {
                     cpu.keyBeingPressed = 0x1;
@@ -241,7 +289,7 @@ int main()
             if (!cpu.waitForAKeyPress)
                 opcode = fetch(cpu);
             
-            std::cout << disassembler(opcode) << "\n";
+            // std::cout << disassembler(opcode) << "\n";
 
             decode(cpu, opcode);
             cycleAccumulator -= timePerCycle.count();
@@ -263,8 +311,11 @@ int main()
                 // bips in the future
             }
 
+            ++fps.frames;
+
             window.clear(sf::Color::Black);
             window.draw( sprite );
+            window.draw( fpsCounter );
             window.display();
         
             timerAccumulator -= timePerTimer.count();

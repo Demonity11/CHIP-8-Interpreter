@@ -23,7 +23,6 @@ void op_Annn(Chip8& cpu, std::uint16_t opcode)
 void op_1nnn(Chip8& cpu, std::uint16_t opcode)
 {
 	cpu.pc = opcode & Masks::nnn;
-	// std::cout << "0x" << std::hex << std::uppercase << cpu.pc << "\n";
 }
 
 void op_2nnn(Chip8& cpu, std::uint16_t opcode) {

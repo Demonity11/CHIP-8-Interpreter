@@ -96,5 +96,7 @@ auto getRegisterName(std::uint16_t regIndex)  		  -> std::string;
 auto getOpcodeConvertedToString(std::uint16_t opcode) -> std::string;
 auto getCallStack(const Chip8& cpu, int index) 		  -> std::string;
 auto disassembler(std::uint16_t opcode) 			  -> std::string;
+auto getFPS(double averageFPS)						  -> std::string;
+auto getRegister(const Chip8& cpu, int index)		  -> std::string;
 
 #endif

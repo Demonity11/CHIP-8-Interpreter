@@ -1,6 +1,15 @@
 #include "chip8.h"
 #include <sstream>
 
+std::string getFPS(double averageFPS)
+{
+    std::stringstream ss{};
+
+    ss << "FPS: " << std::setprecision(4) << averageFPS;
+    
+    return ss.str();
+}
+
 std::string hexToString(std::uint16_t hex, int size)
 {
     std::stringstream ss{};
@@ -33,9 +42,20 @@ std::string getCallStack(const Chip8& cpu, int index)
 {
     std::stringstream ss{};
 
-    ss << std::hex << std::uppercase << cpu.stack[index];
+    ss << std::hex << std::uppercase << "Stack #" << index << cpu.stack[index];
 
-    std::string hexString{ "0x" + ss.str() };
+    std::string hexString{ ss.str() };
+
+    return hexString;
+}
+
+std::string getRegister(const Chip8& cpu, int index)
+{
+    std::stringstream ss{};
+
+    ss << std::hex << std::uppercase << "V" << index << " = 0x" << cpu.V[index];
+
+    std::string hexString{ ss.str() };
 
     return hexString;
 }
