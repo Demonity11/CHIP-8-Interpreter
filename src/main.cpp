@@ -2,6 +2,8 @@
 #include <chrono>
 #include <thread>
 #include <SFML/Graphics.hpp>
+#include "imgui.h"
+#include "imgui-SFML.h"
 
 using namespace std::literals::chrono_literals;
 
@@ -57,8 +59,15 @@ int main()
 
     // SFML setup
     sf::RenderWindow window( sf::VideoMode( { windowWidth * windowScale, windowHeight * windowScale} ), "CHIP-8" );
-    // window.setFramerateLimit(60); // while this adds some performance, it also breaks some games.
+    window.setFramerateLimit(60); // while this adds some performance, it also breaks some games.
+    sf::Clock deltaClock;
 
+    // ImGui setup
+    
+    if (!ImGui::SFML::Init(window))
+        return -1;
+
+    // textures setup
     sf::Texture gameWindow(sf::Vector2u(windowWidth, windowHeight));
     sf::RenderTexture debugWindow({windowWidth, windowHeight});
 
@@ -104,6 +113,8 @@ int main()
 
         while ( const std::optional event = window.pollEvent() )
 		{
+            ImGui::SFML::ProcessEvent(window, *event);
+
 			if ( event->is<sf::Event::Closed>() )
 				window.close();
 
@@ -295,6 +306,21 @@ int main()
             cycleAccumulator -= timePerCycle.count();
         }
 
+        while (timerAccumulator >= timePerTimer.count()) // decrement timers and update screen at 60 Hz
+        {
+            if (cpu.delayTimer > 0) 
+                cpu.delayTimer--;
+
+            if (cpu.soundTimer > 0) 
+            {
+                cpu.soundTimer--;
+                // bips in the future
+            }
+
+            ++fps.frames;
+            timerAccumulator -= timePerTimer.count();
+        }
+
         display = getDisplay(cpu);
         gameWindow.update(display.data());
 
@@ -309,55 +335,49 @@ int main()
         debugWindowSprite.setPosition({ (windowWidth * windowScale) / 1.6f, 0.f });
         debugWindowSprite.setScale(sf::Vector2f(7.5f, windowScale / 1.6f));
 
+        std::string lines{};
+        int baseIndex{ (cpu.pc - 0x200) / 2 };
 
-        while (timerAccumulator >= timePerTimer.count()) // decrement timers and update screen at 60 Hz
+        for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
         {
-            if (cpu.delayTimer > 0) 
-                cpu.delayTimer--;
+            int index{ baseIndex + i };
 
-            if (cpu.soundTimer > 0) 
+            if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
             {
-                cpu.soundTimer--;
-                // bips in the future
+                lines += debugger.disassembledInstructions[index] + "\n";
             }
-
-            ++fps.frames;
-
-            std::string lines{};
-            int baseIndex{ (cpu.pc - 0x200) / 2 };
-
-            for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
-            {
-                int index{ baseIndex + 0 };
-
-                if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
-                {
-                    lines += debugger.disassembledInstructions[index] + "\n";
-                }
-            }
-
-            opcodes.setString(lines);
-
-            lines = "";
-
-            window.clear(sf::Color::Black);
-            window.draw( gameWindowSprite );
-            window.draw( debugWindowSprite );
-            window.draw( fpsCounter );
-            window.draw( opcodes );
-            window.display();
-        
-            timerAccumulator -= timePerTimer.count();
-
-            // sf::Vector2f pos{ debugWindowSprite.getPosition() };
-            // sf::Color color{ debugWindowSprite.getColor() };
-
-            // std::cout << pos.x << ", " << pos.y << "\n";
-            // std::cout << color.toInteger() << "\n";
         }
+
+        opcodes.setString(lines);
+
+        lines = "";
+
+        ImGui::SFML::Update(window, deltaClock.restart());
+
+        ImGui::Begin("Debugger");
+
+        ImGui::End();
+
+        window.clear(sf::Color::Black);
+        window.draw( gameWindowSprite );
+        window.draw( debugWindowSprite );
+        window.draw( fpsCounter );
+        window.draw( opcodes );
+
+        ImGui::SFML::Render(window);
+
+        window.display();
+
+        // sf::Vector2f pos{ debugWindowSprite.getPosition() };
+        // sf::Color color{ debugWindowSprite.getColor() };
+
+        // std::cout << pos.x << ", " << pos.y << "\n";
+        // std::cout << color.toInteger() << "\n";
         
-        std::this_thread::sleep_for(1ms); // this is not the best solution for stability, but it works for performance.
+        // std::this_thread::sleep_for(1ms); // this is not the best solution for stability, but it works for performance.
     }
+
+    ImGui::SFML::Shutdown();
 
     return 0;
 }
