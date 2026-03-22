@@ -42,6 +42,9 @@ target_include_directories(main PRIVATE include)
 
 target_link_libraries(main PRIVATE 
     SFML::Graphics 
+    SFML::Audio         
+    SFML::Window          
+    SFML::System
     ImGui-SFML::ImGui-SFML
 )
 
