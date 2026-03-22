@@ -35,7 +35,6 @@ int main()
 
     // Debugger setup
     bool isDebugging{ true };
-
     DebuggerViewState debugger{};
 
     // Chip-8 setup
@@ -52,7 +51,7 @@ int main()
     double timerAccumulator{ 0.0 };
     double cycleAccumulator{ 0.0 };
 
-    // window size and scale multipliers
+    // window size and scale multiplier
     constexpr int windowWidth{ 64 };
     constexpr int windowHeight{ 32 };
     constexpr int windowScale{ 20 };
@@ -302,6 +301,17 @@ int main()
             }
 		}
 
+        if (debugger.stepMode) // if the Step button is clicked, then we enter here and execute exactly one instruction. 
+        {
+            if (cpu.waitForAKeyPress)
+                continue;
+
+            opcode = fetch(cpu);
+            decode(cpu, opcode);
+
+            debugger.stepMode = false;
+        }
+
         while (cycleAccumulator >= timePerCycle.count()) // fetch-decode-execute cycle at 500 Hz
         {
             cycleAccumulator -= timePerCycle.count();
@@ -422,6 +432,11 @@ int main()
             if (ImGui::Button("Pause Emulation"))
             {
                 debugger.isPaused ^= 1; // this toggles the isPaused variable 
+            }
+
+            if (ImGui::Button("Step"))
+            {
+                debugger.stepMode = true;
             }
     
             ImGui::End();
