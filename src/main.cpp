@@ -1,5 +1,4 @@
 #include <chrono>
-#include <thread>
 #include <SFML/Graphics.hpp>
 #include "../include/chip8.h"
 #include "imgui.h"
@@ -124,7 +123,7 @@ int main()
 
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
             {
-                if (keyPressed->scancode == sf::Keyboard::Scan::R) // reload the game. This is for games that freezes when you lose.
+                if (keyPressed->scancode == sf::Keyboard::Scan::F1) // reload the game. This is for games that freezes when you lose.
                 {
                     cpu = init(filename, debugger, isDebugging);
 
@@ -303,10 +302,11 @@ int main()
 
         if (debugger.stepMode) // if the Step button is clicked, then we enter here and execute exactly one instruction. 
         {
-            if (cpu.waitForAKeyPress)
-                continue;
-
-            opcode = fetch(cpu);
+            if (!cpu.waitForAKeyPress)
+            {
+                opcode = fetch(cpu);
+            }
+            
             decode(cpu, opcode);
 
             debugger.stepMode = false;
@@ -319,7 +319,10 @@ int main()
             if (!debugger.isPaused)
             {
                 if (cpu.waitForAKeyPress)
+                {
+                    decode(cpu, opcode);
                     continue;
+                }
     
                 opcode = fetch(cpu);
                 decode(cpu, opcode);
@@ -361,7 +364,8 @@ int main()
             {
                 if (ImGui::BeginTabItem("Instructions"))
                 {
-                    int baseIndex{ (cpu.pc - 0x200) / 2 };
+                    int offset{ (cpu.pc > 0x200) ? 2 : 0 }; // if the address greater than 0x200, then we subtract 2 from baseIndex
+                    int baseIndex{ (cpu.pc - 0x200 - offset) / 2 };
             
                     for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
                     {
@@ -423,13 +427,15 @@ int main()
                     ImGui::Text("ST: 0x%02X", cpu.soundTimer);
                     ImGui::Text("I: 0x%04X", cpu.I);
 
+                    if (cpu.waitForAKeyPress) ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "STATUS: WAITING FOR KEY");
+
                     ImGui::EndTabItem();
                 }
 
                 ImGui::EndTabBar();
             }
 
-            if (ImGui::Button("Pause Emulation"))
+            if (ImGui::Button((!debugger.isPaused) ? "Pause Emulation" : "Resume Emulation"))
             {
                 debugger.isPaused ^= 1; // this toggles the isPaused variable 
             }
@@ -452,14 +458,6 @@ int main()
             ImGui::SFML::Render(window);
 
         window.display();
-
-        // sf::Vector2f pos{ debugWindowSprite.getPosition() };
-        // sf::Color color{ debugWindowSprite.getColor() };
-
-        // std::cout << pos.x << ", " << pos.y << "\n";
-        // std::cout << color.toInteger() << "\n";
-        
-        // std::this_thread::sleep_for(1ms); // this is not the best solution for stability, but it works for performance.
     }
 
     ImGui::SFML::Shutdown();

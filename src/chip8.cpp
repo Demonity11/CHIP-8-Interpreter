@@ -257,19 +257,3 @@ void initDebugger(const Chip8& cpu, DebuggerViewState& debugger, int fileSize)
 {
     debugger.disassembledInstructions = getMemoryContent(cpu, fileSize);
 }
-
-
-// int main()
-// {
-//     Chip8 cpu{ init("IBM Logo.ch8") };
-
-//     for (int i{0}; i < 200; ++i)
-//     {
-//         auto opcode = fetch(cpu);
-//         decode(cpu, opcode);
-//     }
-
-//     std::vector<std::uint8_t> display{ getDisplay(cpu) };
-
-//     return 0;
-// }
