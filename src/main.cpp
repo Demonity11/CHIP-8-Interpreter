@@ -69,7 +69,6 @@ int main()
 
     // textures setup
     sf::Texture gameWindow(sf::Vector2u(windowWidth, windowHeight));
-    sf::RenderTexture debugWindow({windowWidth, windowHeight});
 
     sf::Font font{};
 
@@ -329,45 +328,77 @@ int main()
         gameWindow.update(display.data());
 
         sf::Sprite gameWindowSprite(gameWindow);
-        gameWindowSprite.setScale(sf::Vector2f(windowScale / 1.6f, windowScale / 1.6f));
-
-        debugWindow.clear(sf::Color::Blue);
-        // debugWindow.draw(opcodes);
-        debugWindow.display();
-
-        sf::Sprite debugWindowSprite( debugWindow.getTexture() );
-        debugWindowSprite.setPosition({ (windowWidth * windowScale) / 1.6f, 0.f });
-        debugWindowSprite.setScale(sf::Vector2f(7.5f, windowScale / 1.6f));
-
-        
+        gameWindowSprite.setScale(sf::Vector2f(windowScale, windowScale));
+   
         ImGui::SFML::Update(window, deltaClock.restart());
         
         ImGui::Begin("Debugger", &debugger.showDebugger, ImGuiWindowFlags_None);
         
-        int baseIndex{ (cpu.pc - 0x200) / 2 };
-
-        for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
+        if (ImGui::CollapsingHeader("Disassembler"))
         {
-            int index{ baseIndex + i };
-
-            if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
+            int baseIndex{ (cpu.pc - 0x200) / 2 };
+    
+            for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
             {
-                if (i == 0)
+                int index{ baseIndex + i };
+    
+                if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
-                    ImGui::Text(debugger.disassembledInstructions[index].c_str());
-                    ImGui::PopStyleColor();
+                    if (i == 0)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
+                        ImGui::Text(debugger.disassembledInstructions[index].c_str());
+                        ImGui::PopStyleColor();
+                    }
+    
+                    ImGui::TextUnformatted(debugger.disassembledInstructions[index].c_str());
+                }
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Register (V)"))
+        {
+            if (ImGui::BeginTable("RegisterTable", 2))
+            {
+                for (int i = 0; i < 16; i++)
+                {
+                    ImGui::TableNextColumn();
+                    ImGui::Text("V%X: 0x%02X", i, cpu.V[i]);
                 }
 
-                ImGui::Text(debugger.disassembledInstructions[index].c_str());
+                ImGui::EndTable();
             }
+        }
+
+        if (ImGui::CollapsingHeader("Stack"))
+        {
+            if (ImGui::BeginTable("StackTable", 2))
+            {
+                for (int i = 0; i < 16; i++)
+                {
+                    ImGui::TableNextColumn();
+                    ImGui::Text("S%X: 0x%02X", i, cpu.stack[i]);
+                }
+
+                ImGui::EndTable();
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Other"))
+        {
+            ImGui::Text("PC: 0x%04X", cpu.pc);
+            ImGui::Text("SP: 0x%02X", cpu.sp);
+            ImGui::Text("DT: 0x%02X", cpu.delayTimer);
+            ImGui::Text("ST: 0x%02X", cpu.soundTimer);
+            ImGui::Text("I: 0x%04X", cpu.I);
         }
 
         ImGui::End();
 
+        ImGui::ShowDemoWindow();
+
         window.clear(sf::Color::Black);
         window.draw( gameWindowSprite );
-        window.draw( debugWindowSprite );
         window.draw( fpsCounter );
         window.draw( opcodes );
 

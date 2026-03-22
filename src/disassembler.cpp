@@ -79,7 +79,7 @@ std::string getRegister(const Chip8& cpu, int index)
 {
     std::stringstream ss{};
 
-    ss << std::hex << std::uppercase << "V" << index << " = 0x" << cpu.V[index];
+    ss << std::hex << std::uppercase << "V" << index << " = 0x" << std::setw(2) << std::setfill('0') << cpu.V[index];
 
     std::string hexString{ ss.str() };
 

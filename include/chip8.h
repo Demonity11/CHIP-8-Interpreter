@@ -51,6 +51,7 @@ struct DebuggerViewState {
 
     bool isPaused{ false };
     bool stepMode{ false };
+	bool showDebugger{ true };
 
     std::string pcString{};
     std::string iString{};
