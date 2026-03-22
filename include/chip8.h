@@ -66,16 +66,17 @@ struct FPS
 };
 
 // forward declarations for "chip8.cpp"
-auto decode(Chip8& cpu, std::uint16_t opcode)         				 -> void;
-auto fetch(Chip8& cpu) 								  				 -> std::uint16_t;
-auto loadROM(Chip8& cpu, const std::string& filename) 				 -> int;
-auto loadFontSprites(Chip8& cpu)                      				 -> void;
-auto clearMemory(Chip8& cpu) 						  				 -> void;
-auto printROM(const Chip8& cpu, int fileSize) 		  				 -> void;
-auto printDisplay(const Chip8& cpu) 				  				 -> void;
-auto init(const std::string& romName, DebuggerViewState& debugger) 	 -> Chip8;
-auto getDisplay(const Chip8& cpu) 									 -> std::vector<std::uint8_t>;
-auto getOpcodeConvertedToString(std::uint16_t opcode)                -> std::string;
+auto decode(Chip8& cpu, std::uint16_t opcode)         										 -> void;
+auto fetch(Chip8& cpu) 								  										 -> std::uint16_t;
+auto loadROM(Chip8& cpu, const std::string& filename) 										 -> int;
+auto loadFontSprites(Chip8& cpu)                      										 -> void;
+auto clearMemory(Chip8& cpu) 						  				 						 -> void;
+auto printROM(const Chip8& cpu, int fileSize) 		  				 						 -> void;
+auto printDisplay(const Chip8& cpu) 				  				 						 -> void;
+auto init(const std::string& romName, DebuggerViewState& debugger, bool isDebugging) 	 	 -> Chip8;
+auto initDebugger(const Chip8& cpu, DebuggerViewState& debugger, int fileSize) 				 -> void;
+auto getDisplay(const Chip8& cpu) 															 -> std::vector<std::uint8_t>;
+auto getOpcodeConvertedToString(std::uint16_t opcode)            						     -> std::string;
 
 // forward declarations for "opcodes.cpp"
 void op_00E0(Chip8& cpu, std::uint16_t opcode);

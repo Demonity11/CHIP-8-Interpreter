@@ -239,7 +239,7 @@ void printDisplay(const Chip8& cpu) // print the contents of the display array
     }
 }
 
-Chip8 init(const std::string& romName, DebuggerViewState& debugger)
+Chip8 init(const std::string& romName, DebuggerViewState& debugger, bool isDebugging=false)
 {
     Chip8 cpu{};
 
@@ -247,10 +247,17 @@ Chip8 init(const std::string& romName, DebuggerViewState& debugger)
     
 	int fileSize{ loadROM(cpu, romName) };
 
-    debugger.disassembledInstructions = getMemoryContent(cpu, fileSize);
+    if (isDebugging)
+        initDebugger(cpu, debugger, fileSize);
 
     return cpu;
 }
+
+void initDebugger(const Chip8& cpu, DebuggerViewState& debugger, int fileSize)
+{
+    debugger.disassembledInstructions = getMemoryContent(cpu, fileSize);
+}
+
 
 // int main()
 // {

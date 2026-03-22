@@ -34,10 +34,12 @@ int main()
 
     // Debugger setup
 
+    bool isDebugging{ true };
+
     DebuggerViewState debugger{};
 
     // Chip-8 setup
-    Chip8 cpu{ init(filename, debugger) };
+    Chip8 cpu{ init(filename, debugger, isDebugging) };
     std::vector<std::uint8_t> display(64 * 32 * 4);
     std::uint16_t opcode{};
     
@@ -64,8 +66,11 @@ int main()
 
     // ImGui setup
     
-    if (!ImGui::SFML::Init(window))
-        return -1;
+    if (isDebugging)
+    {
+        if (!ImGui::SFML::Init(window))
+            return -1;
+    }
 
     // textures setup
     sf::Texture gameWindow(sf::Vector2u(windowWidth, windowHeight));
@@ -114,7 +119,8 @@ int main()
 
         while ( const std::optional event = window.pollEvent() )
 		{
-            ImGui::SFML::ProcessEvent(window, *event);
+            if (isDebugging)
+                ImGui::SFML::ProcessEvent(window, *event);
 
 			if ( event->is<sf::Event::Closed>() )
 				window.close();
@@ -123,7 +129,7 @@ int main()
             {
                 if (keyPressed->scancode == sf::Keyboard::Scan::R) // reload the game. This is for games that freezes when you lose.
                 {
-                    cpu = init(filename, debugger);
+                    cpu = init(filename, debugger, isDebugging);
 
                     timerAccumulator = 0;
                     cycleAccumulator = 0;
@@ -329,80 +335,99 @@ int main()
 
         sf::Sprite gameWindowSprite(gameWindow);
         gameWindowSprite.setScale(sf::Vector2f(windowScale, windowScale));
-   
-        ImGui::SFML::Update(window, deltaClock.restart());
         
-        ImGui::Begin("Debugger", &debugger.showDebugger, ImGuiWindowFlags_None);
-        
-        if (ImGui::CollapsingHeader("Disassembler"))
+        // ImGui debugger interface
+
+        if (isDebugging)
         {
-            int baseIndex{ (cpu.pc - 0x200) / 2 };
-    
-            for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
+            ImGui::SFML::Update(window, deltaClock.restart());
+            
+            ImGui::Begin("Debugger", &debugger.showDebugger, ImGuiWindowFlags_None);
+            
+            if (ImGui::BeginTabBar("DebuggerTabs"))
             {
-                int index{ baseIndex + i };
-    
-                if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
+                if (ImGui::BeginTabItem("Instructions"))
                 {
-                    if (i == 0)
+                    int baseIndex{ (cpu.pc - 0x200) / 2 };
+            
+                    for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
                     {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
-                        ImGui::Text(debugger.disassembledInstructions[index].c_str());
-                        ImGui::PopStyleColor();
-                    }
+                        int index{ baseIndex + i };
+            
+                        if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
+                        {
+                            if (i == 0)
+                            {
+                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
+                                ImGui::Text(debugger.disassembledInstructions[index].c_str());
+                                ImGui::PopStyleColor();
+                            }
     
-                    ImGui::TextUnformatted(debugger.disassembledInstructions[index].c_str());
+                            else 
+                            {
+                                ImGui::TextUnformatted(debugger.disassembledInstructions[index].c_str());
+                            }
+                        }
+                    }
+                    ImGui::EndTabItem();
                 }
-            }
-        }
-
-        if (ImGui::CollapsingHeader("Register (V)"))
-        {
-            if (ImGui::BeginTable("RegisterTable", 2))
-            {
-                for (int i = 0; i < 16; i++)
+        
+                if (ImGui::BeginTabItem("Register (V)"))
                 {
-                    ImGui::TableNextColumn();
-                    ImGui::Text("V%X: 0x%02X", i, cpu.V[i]);
+                    if (ImGui::BeginTable("RegisterTable", 2))
+                    {
+                        for (int i = 0; i < 16; i++)
+                        {
+                            ImGui::TableNextColumn();
+                            ImGui::Text("V%X: 0x%02X", i, cpu.V[i]);
+                        }
+        
+                        ImGui::EndTable();
+                    }
+                    ImGui::EndTabItem();
                 }
-
-                ImGui::EndTable();
-            }
-        }
-
-        if (ImGui::CollapsingHeader("Stack"))
-        {
-            if (ImGui::BeginTable("StackTable", 2))
-            {
-                for (int i = 0; i < 16; i++)
+        
+                if (ImGui::BeginTabItem("Stack"))
                 {
-                    ImGui::TableNextColumn();
-                    ImGui::Text("S%X: 0x%02X", i, cpu.stack[i]);
+                    if (ImGui::BeginTable("StackTable", 2))
+                    {
+                        for (int i = 0; i < 16; i++)
+                        {
+                            ImGui::TableNextColumn();
+                            ImGui::Text("S%X: 0x%02X", i, cpu.stack[i]);
+                        }
+        
+                        ImGui::EndTable();
+                    }
+                    ImGui::EndTabItem();
+                }
+        
+                if (ImGui::BeginTabItem("Other"))
+                {
+                    ImGui::Text("PC: 0x%04X", cpu.pc);
+                    ImGui::Text("SP: 0x%02X", cpu.sp);
+                    ImGui::Text("DT: 0x%02X", cpu.delayTimer);
+                    ImGui::Text("ST: 0x%02X", cpu.soundTimer);
+                    ImGui::Text("I: 0x%04X", cpu.I);
+
+                    ImGui::EndTabItem();
                 }
 
-                ImGui::EndTable();
+                ImGui::EndTabBar();
             }
+    
+            ImGui::End();
+    
+            ImGui::ShowDemoWindow();
         }
-
-        if (ImGui::CollapsingHeader("Other"))
-        {
-            ImGui::Text("PC: 0x%04X", cpu.pc);
-            ImGui::Text("SP: 0x%02X", cpu.sp);
-            ImGui::Text("DT: 0x%02X", cpu.delayTimer);
-            ImGui::Text("ST: 0x%02X", cpu.soundTimer);
-            ImGui::Text("I: 0x%04X", cpu.I);
-        }
-
-        ImGui::End();
-
-        ImGui::ShowDemoWindow();
 
         window.clear(sf::Color::Black);
         window.draw( gameWindowSprite );
         window.draw( fpsCounter );
         window.draw( opcodes );
 
-        ImGui::SFML::Render(window);
+        if (isDebugging)
+            ImGui::SFML::Render(window);
 
         window.display();
 
