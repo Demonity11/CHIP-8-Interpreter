@@ -1,64 +1,64 @@
-# 🚀 CHIP-8 Emulator (C++ / SFML)
+# CHIP-8 Emulator & Integrated ImGui Debugger
 
-A fully functional **CHIP-8** emulator developed as a personal project during my first semester of Computer Science at **UFERSA**. This project explores low-level CPU architecture, memory management, opcode implementation, and real-time graphics rendering.
+A high-performance **CHIP-8 Virtual Machine** implemented in **Modern C++20**. This project focuses on cycle-accurate emulation and provides a robust real-time debugging suite for low-level software analysis.
 
-## 🛠️ Technologies & Core Concepts
+## 🏛️ System Architecture
 
-* **Language:** C++ (Modern standard)
-* **Graphics & Input:** [SFML](https://www.sfml-dev.org/) (Simple and Fast Multimedia Library)
-* **Build System:** CMake
-* **Concepts Applied:**
-    * Instruction Cycle (Fetch-Decode-Execute).
-    * Bitwise Operations & Masking.
-    * Time Synchronization (500Hz CPU Clock & 60Hz Timers).
-    * Memory Mapping and Stack Management.
+This emulator implements the standard CHIP-8 specifications with a focus on **Systems Programming** best practices:
 
-## 🎮 Current Features
+* **CPU:** 500Hz instruction clock with a decoupled 60Hz Timer/UI frequency.
+* **Memory Map:** 4096 bytes of linear addressing (ROM entry point at `0x200`).
+* **Registers:** 16 x 8-bit general-purpose registers ($V0$ - $VF$).
+* **Program Counter ($PC$):** 16-bit pointer with custom **Offset Logic** for real-time synchronization with the disassembler view.
+* **Stack:** 16-level nested subroutine support.
+* **Display:** 64x32 monochrome buffer using **XOR Rendering Logic** for hardware-level collision detection ($VF$ flag).
 
-* [x] **Core CPU:** Accurate implementation of the standard CHIP-8 opcode set.
-* [x] **Graphics:** 64x32 display rendering using SFML textures and pixel buffer mapping.
-* [x] **Input Handling:** Real-time state management for the 16-key hexadecimal keypad (Pressed/Released states).
-* [x] **ROM Compatibility:** Fully playable with classic ROMs like `IBM Logo.ch8` and `Cave.ch8`.
-* [x] **Timing:** Precise synchronization of Delay and Sound timers.
+## 🛠️ Advanced Debugger Features
 
-## ⌨️ Key Mapping
+Integrated via **Dear ImGui**, the debugger provides a professional-grade environment for ROM analysis:
 
-The original 16-key hexadecimal keypad is mapped to the modern QWERTY layout for a seamless gaming experience:
+### 1. Real-time Disassembler
+* **Instruction Synchronization:** Implements a $PC - 2$ offset to align the currently executing opcode with the visual mnemonic highlight.
+* **Wait State Awareness:** Visual indicator for the `FX0A` instruction (**WAITING FOR KEY**) to prevent UI confusion during blocking input cycles.
 
-| CHIP-8 Key | Modern Input |
-| :--- | :--- |
-| `1` `2` `3` `C` | `1` `2` `3` `4` |
-| `4` `5` `6` `D` | `Q` `W` `E` `R` |
-| `7` `8` `9` `E` | `A` `S` `D` `F` |
-| `A` `0` `B` `F` | `Z` `X` `C` `V` |
+### 2. Execution Control (Control Flow)
+* **Deterministic Pause:** Freezes both the CPU cycles and the Delay/Sound timers while keeping the UI responsive.
+* **Single-Step Execution:** Execute exactly one opcode at a time while the system is paused to inspect state transitions in registers and memory.
 
-## 🚀 Getting Started
+### 3. State Visualization
+* **Register Tables:** Organized hex/decimal view of all $Vx$ registers.
+* **Context Tabs:** Separated views for **Instructions**, **Registers**, **Stack**, and **System State** (I, PC, SP, Timers).
+
+## 🚀 Performance & Timing
+
+The main loop utilizes a **Fixed-Timestep** algorithm via `<chrono>`:
+* **Cycle Accumulator:** Ensures the CPU maintains exactly 500 instructions per second regardless of host hardware speed.
+* **Input Debouncing:** SFML events are processed independently to ensure responsive keyboard mapping even during high-frequency cycles.
+
+## ⌨️ Key Mapping (Hexpad)
+
+| CHIP-8 | PC Key | | CHIP-8 | PC Key |
+| :--- | :--- | :--- | :--- | :--- |
+| **1** | `1` | | **2** | `2` |
+| **3** | `3` | | **C** | `4` |
+| **4** | `Q` | | **5** | `W` |
+| **6** | `E` | | **D** | `R` |
+| **7** | `A` | | **8** | `S` |
+| **9** | `9` | | **E** | `F` |
+| **A** | `Z` | | **0** | `X` |
+| **B** | `C` | | **F** | `V` |
+
+* **F1:** System Reload (Hard Reset)
+* **Debugger:** Integrated "Pause" and "Step" buttons.
+
+## 🏗️ Building the Project
 
 ### Prerequisites
-* A modern C++ compiler (GCC, Clang, or MSVC).
-* [SFML](https://www.sfml-dev.org/download.php) library installed.
-* CMake (3.10 or higher).
+* C++20 compliant compiler (GCC 11+, Clang 13+, or MSVC 2022).
+* **SFML 3.0+**
+* **Dear ImGui** (Included via FetchContent/Submodule)
 
-### Build & Run
+### Build Commands
 ```bash
-# Clone the repository
-git clone https://github.com/YourUsername/CHIP-8-Emulator.git
-
-# Build the project
-mkdir build && cd build
-cmake ..
-cmake --build .
-
-# Run the emulator
-./CHIP8_Emulator
-```
-
-## 📐 Technical Implementation
-
-The CPU runs at a fixed clock of **500Hz**, while the **Delay** and **Sound** timers decrement at **60Hz**. The display logic uses the `Dxyn` instruction, which renders sprites using XOR operations. If a pixel is erased during rendering, the `VF` register is set to 1, providing native support for collision detection.
-
-## 📈 Roadmap
-
-* [ ] **OOP Refactoring:** Transition to a full Object-Oriented architecture (Encapsulation and Classes).
-* [ ] **Audio System:** Implement a square-wave "beep" using `sf::Sound`.
-* [ ] **Dynamic Scaling:** Add support for window resizing with Aspect Ratio maintenance.
+cmake -B build
+cmake --build build
