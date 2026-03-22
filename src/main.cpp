@@ -74,7 +74,7 @@ int main()
 
 	// sound setup
     constexpr unsigned int SAMPLE_RATE{ 44100 };
-    constexpr unsigned int AMPLITUDE{ 30000 };
+    constexpr int AMPLITUDE{ 30000 };
     constexpr double FREQUENCY{ 440.0 };
 
     std::vector<std::int16_t> samples(SAMPLE_RATE / 10);
@@ -94,6 +94,7 @@ int main()
         return -1;
 
     sf::Sound sound(buffer);
+    sound.setLooping(true);
 
     // font setup
     sf::Font font{};
@@ -370,6 +371,13 @@ int main()
                     if (sound.getStatus() != sf::Sound::Status::Playing)
                     {
                         sound.play();
+                    }
+                }
+                else
+                {
+                    if (sound.getStatus() == sf::Sound::Status::Playing)
+                    {
+                        sound.stop();
                     }
                 }
             }
