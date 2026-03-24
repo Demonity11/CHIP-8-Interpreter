@@ -10,7 +10,7 @@
 
 // foward declarations
 void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState& debugger, const Chip8& cpu, EmulatorState& emulatorState);
-std::optional<std::string> romSelection(bool& isDebugging);
+std::optional<std::string> romSelection(bool& isDebugging, sf::RenderWindow& window);
 
 int main()
 {   
@@ -278,7 +278,7 @@ int main()
         
         if (showMainMenu)
         {
-            auto newFile { romSelection(isDebugging) }; // under construction.
+            auto newFile { romSelection(isDebugging, window) }; // under construction.
     
             if (newFile)
             {
@@ -401,7 +401,7 @@ void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState&
     }
 }
 
-std::optional<std::string> romSelection(bool& isDebugging)
+std::optional<std::string> romSelection(bool& isDebugging, sf::RenderWindow& window)
 {
     namespace fs = std::filesystem;
 
@@ -431,6 +431,11 @@ std::optional<std::string> romSelection(bool& isDebugging)
             if (ImGui::MenuItem("Show Debugger", NULL, isDebugging))
             {
                 isDebugging ^= 1;
+            }
+
+            if (ImGui::MenuItem("Quit"))
+            {
+                window.close();
             }
 
             ImGui::EndMenu();
