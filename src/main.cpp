@@ -9,40 +9,21 @@
 #include "imgui-SFML.h"
 
 // foward declarations
-void showDebugger(bool isDebugging, sf::RenderWindow& window, sf::Clock& deltaClock, DebuggerViewState& debugger, const Chip8& cpu, EmulatorState& emulatorState);
-std::optional<std::string> romSelection();
+void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState& debugger, const Chip8& cpu, EmulatorState& emulatorState);
+std::optional<std::string> romSelection(bool& isDebugging);
 
 int main()
 {   
     EmulatorState emulatorState{ EmulatorState::RomSelection };
 
-    // this solution for selecting roms is provisory.
-    std::cout << "===== Select your ROM =====\n" 
-              << "1 - IBM Logo.ch8\n"
-              << "2 - Airplane.ch8\n"
-              << "3 - Cave.ch8\n"
-              << "4 - Cavern.ch8\n"
-              << "5 - Pong (1 player).ch8\n"
-              << "===========================\n";
-
-    int choice{};
-    std::cin >> choice;
     std::string filename{};
 
-    switch (choice)
-    {
-    case 1: filename = "IBM Logo.ch8";        break;
-    case 2: filename = "Airplane.ch8";        break;
-    case 3: filename = "Cave.ch8";            break;
-    case 4: filename = "cavern.ch8";          break;
-    case 5: filename = "Pong (1 player).ch8"; break;
-
-    default: filename = "IBM Logo.ch8";       break;
-    }
-
     // Debugger setup
-    bool isDebugging{ true };
+    bool isDebugging{ false };
     DebuggerViewState debugger{};
+
+    // Main Menu Bar State
+    bool showMainMenu{ true };
 
     // keymapping setup
     std::map<sf::Keyboard::Scan, std::uint8_t> keyMapping
@@ -66,7 +47,8 @@ int main()
     };
 
     // Chip-8 setup
-    Chip8 cpu{ init(filename, debugger, isDebugging) };
+    Chip8 cpu{};
+
     std::vector<std::uint8_t> display(64 * 32 * 4);
     std::uint16_t opcode{};
     
@@ -91,11 +73,8 @@ int main()
     sf::Clock deltaClock{};
 
     // ImGui setup
-    if (isDebugging)
-    {
-        if (!ImGui::SFML::Init(window))
-            return -1;
-    }
+    if (!ImGui::SFML::Init(window))
+        return -1;
 
     // textures setup
     sf::Texture gameWindow(sf::Vector2u(windowWidth, windowHeight));
@@ -169,8 +148,7 @@ int main()
         // event loop
         while ( const std::optional event = window.pollEvent() )
 		{
-            if (isDebugging)
-                ImGui::SFML::ProcessEvent(window, *event);
+            ImGui::SFML::ProcessEvent(window, *event);
 
 			if ( event->is<sf::Event::Closed>() )
 				window.close();
@@ -182,13 +160,17 @@ int main()
 
                 if (key == sf::Keyboard::Scan::F1) // reload the game. This is for games that freezes when you lose.
                 {
-                    cpu = init(filename, debugger, isDebugging);
+                    if (filename != "")
+                    {
+                        cpu = init(filename, debugger, isDebugging);
 
-                    timerAccumulator = 0;
-                    cycleAccumulator = 0;
-                    fps.accumulator = 0;
-                    fps.frames = 0;
+                        timerAccumulator = 0;
+                        cycleAccumulator = 0;
+                        fps.accumulator = 0;
+                        fps.frames = 0;
+                    }
                 }
+
                 else
                 {
                     if (keyMapping.count(key) != 0)
@@ -202,6 +184,11 @@ int main()
             if (const auto* keyPressed = event->getIf<sf::Event::KeyReleased>())
             {
                 auto key { keyPressed->scancode };
+
+                if (key == sf::Keyboard::Scan::Escape)
+                {
+                    showMainMenu ^= 1;
+                }
 
                 if (keyMapping.count(key) != 0)
                 {
@@ -227,7 +214,7 @@ int main()
         {
             cycleAccumulator -= timePerCycle.count();
 
-            if (emulatorState != EmulatorState::Paused) // if the emulator is not paused, then we fetch-decode-execute
+            if (emulatorState == EmulatorState::Running) // if the emulator is not paused, then we fetch-decode-execute
             {
                 if (cpu.waitForAKeyPress)
                 {
@@ -245,7 +232,7 @@ int main()
             ++fps.frames;
             timerAccumulator -= timePerTimer.count();
 
-            if (emulatorState != EmulatorState::Paused)
+            if (emulatorState == EmulatorState::Running)
             {
                 if (cpu.delayTimer > 0) 
                     cpu.delayTimer--;
@@ -267,22 +254,40 @@ int main()
                 }
             }
         }
-
-        display = getDisplay(cpu);
-        gameWindow.update(display.data());
+        
+        // paused because when we step, we want to see things updating on screen
+        if (emulatorState == EmulatorState::Running || emulatorState == EmulatorState::Paused)
+        {
+            display = getDisplay(cpu);
+            gameWindow.update(display.data());
+        }
 
         sf::Sprite gameWindowSprite(gameWindow);
         gameWindowSprite.setScale(sf::Vector2f(windowScale, windowScale));
         
+        // ImGui
+        ImGui::SFML::Update(window, deltaClock.restart());
+
         // ImGui debugger interface
-        showDebugger(isDebugging, window, deltaClock, debugger, cpu, emulatorState);
+        if (isDebugging)
+        {
+            showDebugger(isDebugging, window, debugger, cpu, emulatorState);
+        }
 
         // ImGui rom selection interface
-        auto newFile { romSelection() }; // under construction.
-
-        if (newFile)
+        
+        if (showMainMenu)
         {
-            std::cout << *newFile << "\n";
+            auto newFile { romSelection(isDebugging) }; // under construction.
+    
+            if (newFile)
+            {
+                filename = *newFile;
+
+                cpu = init(filename, debugger, isDebugging);
+                emulatorState = EmulatorState::Running;
+                showMainMenu = false;
+            }
         }
 
         // SFML drawing functions
@@ -290,8 +295,7 @@ int main()
         window.draw( gameWindowSprite );
         window.draw( fpsCounter );
 
-        if (isDebugging)
-            ImGui::SFML::Render(window);
+        ImGui::SFML::Render(window);
 
         window.display();
     }
@@ -301,12 +305,10 @@ int main()
     return 0;
 }
 
-void showDebugger(bool isDebugging, sf::RenderWindow& window, sf::Clock& deltaClock, DebuggerViewState& debugger, const Chip8& cpu, EmulatorState& emulatorState)
+void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState& debugger, const Chip8& cpu, EmulatorState& emulatorState)
 {
     if (isDebugging)
     {
-        ImGui::SFML::Update(window, deltaClock.restart());
-        
         ImGui::Begin("Debugger", &debugger.showDebugger, ImGuiWindowFlags_None);
         
         if (ImGui::BeginTabBar("DebuggerTabs"))
@@ -396,12 +398,10 @@ void showDebugger(bool isDebugging, sf::RenderWindow& window, sf::Clock& deltaCl
         }
 
         ImGui::End();
-
-        ImGui::ShowDemoWindow();
     }
 }
 
-std::optional<std::string> romSelection()
+std::optional<std::string> romSelection(bool& isDebugging)
 {
     namespace fs = std::filesystem;
 
@@ -426,6 +426,11 @@ std::optional<std::string> romSelection()
                 }
 
                 ImGui::EndMenu();
+            }
+
+            if (ImGui::MenuItem("Show Debugger", NULL, isDebugging))
+            {
+                isDebugging ^= 1;
             }
 
             ImGui::EndMenu();

@@ -77,7 +77,7 @@ auto decode(Chip8& cpu, std::uint16_t opcode)         										 -> void;
 auto fetch(Chip8& cpu) 								  										 -> std::uint16_t;
 auto loadROM(Chip8& cpu, const std::string& filename) 										 -> int;
 auto loadFontSprites(Chip8& cpu)                      										 -> void;
-auto clearMemory(Chip8& cpu) 						  				 						 -> void;
+auto reset(Chip8& cpu) 						  				 								 -> void;
 auto printROM(const Chip8& cpu, int fileSize) 		  				 						 -> void;
 auto printDisplay(const Chip8& cpu) 				  				 						 -> void;
 auto init(const std::string& romName, DebuggerViewState& debugger, bool isDebugging) 	 	 -> Chip8;

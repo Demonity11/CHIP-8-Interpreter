@@ -123,9 +123,24 @@ void decode(Chip8& cpu, std::uint16_t opcode)
     }
 }
 
-void clearMemory(Chip8& cpu) // before loading another rom, we want to clear the memory
+// before loading another rom, we want to clear the state of the machine
+void reset(Chip8& cpu) 
 {
-    std::fill(std::begin(cpu.memory), std::end(cpu.memory), 0);
+    cpu.pc = 0x200; 
+
+    std::fill(std::begin(cpu.V), std::end(cpu.V), 0);
+
+    cpu.I = 0;
+    cpu.sp = 0;
+
+    std::fill(std::begin(cpu.stack), std::end(cpu.stack), 0);
+
+    cpu.delayTimer = 0;
+    cpu.soundTimer = 0;
+
+    std::fill(std::begin(cpu.memory) + 80, std::end(cpu.memory), 0);
+
+    std::fill(std::begin(cpu.display), std::end(cpu.display), 0);
 }
 
 void loadFontSprites(Chip8& cpu)
@@ -151,7 +166,7 @@ int loadROM(Chip8& cpu, const std::string& filename) // loads the rom into memor
     const int romAddress{ 0x200 };
 
     if (cpu.memory[romAddress + 1] != 0x00) // clears the memory if a file is already loaded into memory
-        clearMemory(cpu);
+        reset(cpu);
 
     std::ifstream file("../roms/" + filename, std::ios::binary | std::ios::ate);
 
