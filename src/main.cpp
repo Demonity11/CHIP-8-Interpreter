@@ -1,10 +1,13 @@
 #include <chrono>
 #include <cmath>
+#include <map>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include "../include/chip8.h"
 #include "imgui.h"
 #include "imgui-SFML.h"
+
+void showDebugger(bool isDebugging, sf::RenderWindow& window, sf::Clock& deltaClock, DebuggerViewState& debugger, const Chip8& cpu);
 
 using namespace std::literals::chrono_literals;
 
@@ -38,6 +41,27 @@ int main()
     bool isDebugging{ true };
     DebuggerViewState debugger{};
 
+    // keymapping setup
+    std::map<sf::Keyboard::Scan, std::uint8_t> keyMapping
+    {
+        {sf::Keyboard::Scan::Num1, 0x1}, 
+        {sf::Keyboard::Scan::Num2, 0x2},
+        {sf::Keyboard::Scan::Num3, 0x3},
+        {sf::Keyboard::Scan::Num4, 0xC},
+        {sf::Keyboard::Scan::Q, 0x4},
+        {sf::Keyboard::Scan::W, 0x5},
+        {sf::Keyboard::Scan::E, 0x6},
+        {sf::Keyboard::Scan::R, 0xD},
+        {sf::Keyboard::Scan::A, 0x7},
+        {sf::Keyboard::Scan::S, 0x8},
+        {sf::Keyboard::Scan::D, 0x9},
+        {sf::Keyboard::Scan::F, 0xE},
+        {sf::Keyboard::Scan::Z, 0xA},
+        {sf::Keyboard::Scan::X, 0x0},
+        {sf::Keyboard::Scan::C, 0xB},
+        {sf::Keyboard::Scan::V, 0xF}
+    };
+
     // Chip-8 setup
     Chip8 cpu{ init(filename, debugger, isDebugging) };
     std::vector<std::uint8_t> display(64 * 32 * 4);
@@ -48,9 +72,10 @@ int main()
 
     constexpr Milliseconds timePerCycle{ 1000.0 / 500.0 }; // 500 Hz
     constexpr Milliseconds timePerTimer{ 1000.0 / 60.0 }; // 60 Hz
-    auto lastTime = std::chrono::steady_clock::now();
     double timerAccumulator{ 0.0 };
     double cycleAccumulator{ 0.0 };
+    
+    auto lastTime = std::chrono::steady_clock::now();
 
     // window size and scale multiplier
     constexpr int windowWidth{ 64 };
@@ -147,9 +172,12 @@ int main()
 			if ( event->is<sf::Event::Closed>() )
 				window.close();
 
+            // input handler
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
             {
-                if (keyPressed->scancode == sf::Keyboard::Scan::F1) // reload the game. This is for games that freezes when you lose.
+                auto key { keyPressed->scancode };
+
+                if (key == sf::Keyboard::Scan::F1) // reload the game. This is for games that freezes when you lose.
                 {
                     cpu = init(filename, debugger, isDebugging);
 
@@ -158,170 +186,25 @@ int main()
                     fps.accumulator = 0;
                     fps.frames = 0;
                 }
+                else
+                {
+                    if (keyMapping.count(key) != 0)
+                    {
+                        cpu.keyBeingPressed = keyMapping.at(key);
+                        cpu.keypad[keyMapping.at(key)] = 0x1;
+                    }
+                }
 
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num1)
-                {
-                    cpu.keyBeingPressed = 0x1;
-                    cpu.keypad[0x1]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num2)
-                {
-                    cpu.keyBeingPressed = 0x2;
-                    cpu.keypad[0x2]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num3)
-                {
-                    cpu.keyBeingPressed = 0x3;
-                    cpu.keypad[0x3]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num4)
-                {
-                    cpu.keyBeingPressed = 0xC;
-                    cpu.keypad[0xC]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Q)
-                {
-                    cpu.keyBeingPressed = 0x4;
-                    cpu.keypad[0x4]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::W)
-                {
-                    cpu.keyBeingPressed = 0x5;
-                    cpu.keypad[0x5]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::E)
-                {
-                    cpu.keyBeingPressed = 0x6;
-                    cpu.keypad[0x6]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::R)
-                {
-                    cpu.keyBeingPressed = 0xD;
-                    cpu.keypad[0xD]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::A)
-                {
-                    cpu.keyBeingPressed = 0x7;
-                    cpu.keypad[0x7]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::S)
-                {
-                    cpu.keyBeingPressed = 0x8;
-                    cpu.keypad[0x8]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::D)
-                {
-                    cpu.keyBeingPressed = 0x9;
-                    cpu.keypad[0x9]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::F)
-                {
-                    cpu.keyBeingPressed = 0xE;
-                    cpu.keypad[0xE]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Z)
-                {
-                    cpu.keyBeingPressed = 0xA;
-                    cpu.keypad[0xA]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::X)
-                {
-                    cpu.keyBeingPressed = 0x0;
-                    cpu.keypad[0x0]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::C)
-                {
-                    cpu.keyBeingPressed = 0xB;
-                    cpu.keypad[0xB]= 0x1;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::V)
-                {
-                    cpu.keyBeingPressed = 0xF;
-                    cpu.keypad[0xF]= 0x1;
-                }
             }
 
             if (const auto* keyPressed = event->getIf<sf::Event::KeyReleased>())
             {
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num1)
+                auto key { keyPressed->scancode };
+
+                if (keyMapping.count(key) != 0)
                 {
                     cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x1]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num2)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x2]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num3)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x3]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Num4)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0xC]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Q)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x4]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::W)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x5]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::E)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x6]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::R)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0xD]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::A)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x7]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::S)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x8]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::D)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x9]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::F)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0xE]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::Z)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0xA]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::X)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0x0]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::C)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0xB]= 0x0;
-                }
-                if (keyPressed->scancode == sf::Keyboard::Scan::V)
-                {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[0xF]= 0x0;
+                    cpu.keypad[keyMapping.at(key)] = 0x0;
                 }
             }
 		}
@@ -390,101 +273,7 @@ int main()
         gameWindowSprite.setScale(sf::Vector2f(windowScale, windowScale));
         
         // ImGui debugger interface
-        if (isDebugging)
-        {
-            ImGui::SFML::Update(window, deltaClock.restart());
-            
-            ImGui::Begin("Debugger", &debugger.showDebugger, ImGuiWindowFlags_None);
-            
-            if (ImGui::BeginTabBar("DebuggerTabs"))
-            {
-                if (ImGui::BeginTabItem("Instructions"))
-                {
-                    int offset{ (cpu.pc > 0x200) ? 2 : 0 }; // if the address greater than 0x200, then we subtract 2 from baseIndex
-                    int baseIndex{ (cpu.pc - 0x200 - offset) / 2 };
-            
-                    for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
-                    {
-                        int index{ baseIndex + i };
-            
-                        if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
-                        {
-                            if (i == 0)
-                            {
-                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
-                                ImGui::Text(debugger.disassembledInstructions[index].c_str());
-                                ImGui::PopStyleColor();
-                            }
-    
-                            else 
-                            {
-                                ImGui::TextUnformatted(debugger.disassembledInstructions[index].c_str());
-                            }
-                        }
-                    }
-                    ImGui::EndTabItem();
-                }
-        
-                if (ImGui::BeginTabItem("Register (V)"))
-                {
-                    if (ImGui::BeginTable("RegisterTable", 2))
-                    {
-                        for (int i = 0; i < 16; i++)
-                        {
-                            ImGui::TableNextColumn();
-                            ImGui::Text("V%X: 0x%02X", i, cpu.V[i]);
-                        }
-        
-                        ImGui::EndTable();
-                    }
-                    ImGui::EndTabItem();
-                }
-        
-                if (ImGui::BeginTabItem("Stack"))
-                {
-                    if (ImGui::BeginTable("StackTable", 2))
-                    {
-                        for (int i = 0; i < 16; i++)
-                        {
-                            ImGui::TableNextColumn();
-                            ImGui::Text("S%X: 0x%02X", i, cpu.stack[i]);
-                        }
-        
-                        ImGui::EndTable();
-                    }
-                    ImGui::EndTabItem();
-                }
-        
-                if (ImGui::BeginTabItem("Other"))
-                {
-                    ImGui::Text("PC: 0x%04X", cpu.pc);
-                    ImGui::Text("SP: 0x%02X", cpu.sp);
-                    ImGui::Text("DT: 0x%02X", cpu.delayTimer);
-                    ImGui::Text("ST: 0x%02X", cpu.soundTimer);
-                    ImGui::Text("I: 0x%04X", cpu.I);
-
-                    if (cpu.waitForAKeyPress) ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "STATUS: WAITING FOR KEY");
-
-                    ImGui::EndTabItem();
-                }
-
-                ImGui::EndTabBar();
-            }
-
-            if (ImGui::Button((!debugger.isPaused) ? "Pause Emulation" : "Resume Emulation"))
-            {
-                debugger.isPaused ^= 1; // this toggles the isPaused variable 
-            }
-
-            if (ImGui::Button("Step"))
-            {
-                debugger.stepMode = true;
-            }
-    
-            ImGui::End();
-    
-            ImGui::ShowDemoWindow();
-        }
+        showDebugger(isDebugging, window, deltaClock, debugger, cpu);
 
         window.clear(sf::Color::Black);
         window.draw( gameWindowSprite );
@@ -499,4 +288,103 @@ int main()
     ImGui::SFML::Shutdown();
 
     return 0;
+}
+
+void showDebugger(bool isDebugging, sf::RenderWindow& window, sf::Clock& deltaClock, DebuggerViewState& debugger, const Chip8& cpu)
+{
+    if (isDebugging)
+    {
+        ImGui::SFML::Update(window, deltaClock.restart());
+        
+        ImGui::Begin("Debugger", &debugger.showDebugger, ImGuiWindowFlags_None);
+        
+        if (ImGui::BeginTabBar("DebuggerTabs"))
+        {
+            if (ImGui::BeginTabItem("Instructions"))
+            {
+                int offset{ (cpu.pc > 0x200) ? 2 : 0 }; // if the address greater than 0x200, then we subtract 2 from baseIndex
+                int baseIndex{ (cpu.pc - 0x200 - offset) / 2 };
+        
+                for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
+                {
+                    int index{ baseIndex + i };
+        
+                    if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
+                    {
+                        if (i == 0)
+                        {
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
+                            ImGui::Text(debugger.disassembledInstructions[index].c_str());
+                            ImGui::PopStyleColor();
+                        }
+
+                        else 
+                        {
+                            ImGui::TextUnformatted(debugger.disassembledInstructions[index].c_str());
+                        }
+                    }
+                }
+                ImGui::EndTabItem();
+            }
+    
+            if (ImGui::BeginTabItem("Register (V)"))
+            {
+                if (ImGui::BeginTable("RegisterTable", 2))
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::Text("V%X: 0x%02X", i, cpu.V[i]);
+                    }
+    
+                    ImGui::EndTable();
+                }
+                ImGui::EndTabItem();
+            }
+    
+            if (ImGui::BeginTabItem("Stack"))
+            {
+                if (ImGui::BeginTable("StackTable", 2))
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::Text("S%X: 0x%02X", i, cpu.stack[i]);
+                    }
+    
+                    ImGui::EndTable();
+                }
+                ImGui::EndTabItem();
+            }
+    
+            if (ImGui::BeginTabItem("Other"))
+            {
+                ImGui::Text("PC: 0x%04X", cpu.pc);
+                ImGui::Text("SP: 0x%02X", cpu.sp);
+                ImGui::Text("DT: 0x%02X", cpu.delayTimer);
+                ImGui::Text("ST: 0x%02X", cpu.soundTimer);
+                ImGui::Text("I: 0x%04X", cpu.I);
+
+                if (cpu.waitForAKeyPress) ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "STATUS: WAITING FOR KEY");
+
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+
+        if (ImGui::Button((!debugger.isPaused) ? "Pause Emulation" : "Resume Emulation"))
+        {
+            debugger.isPaused ^= 1; // this toggles the isPaused variable 
+        }
+
+        if (ImGui::Button("Step"))
+        {
+            debugger.stepMode = true;
+        }
+
+        ImGui::End();
+
+        ImGui::ShowDemoWindow();
+    }
 }
