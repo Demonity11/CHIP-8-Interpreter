@@ -48,7 +48,8 @@ The main loop utilizes a **Fixed-Timestep** algorithm via `<chrono>`:
 | **A** | `Z` | | **0** | `X` |
 | **B** | `C` | | **F** | `V` |
 
-* **F1:** System Reload (Hard Reset)
+* **F1:** System Reload (Hard Reset).
+* **ESC:** Toggles the ImGui Main Menu Bar (ROM selection and Debugger settings).
 * **Debugger:** Integrated "Pause" and "Step" buttons.
 
 ## 🏗️ Building the Project
@@ -62,3 +63,21 @@ The main loop utilizes a **Fixed-Timestep** algorithm via `<chrono>`:
 ```bash
 cmake -B build
 cmake --build build
+
+## ✍️ Author's Note
+
+What can I say? This was a really fun project to make. I am currently a first-semester Computer Science student at **UFERSA (Campus Mossoró)**. My trajectory until now was deciding that I want to be a graphics programmer, so after that I started learning C++ from [learncpp.com](https://www.learncpp.com/) (C++ is not my first language) and got a solid base to work on. 
+
+Nonetheless, there is more to learn. I began this project because I wanted to build something; I was really anxious to do that. It was fun to apply bitwise operations, break my head thinking how to use the graphics library SFML, create a debugger via Dear ImGui and code C++ in general. This entire project was developed on a Windows desktop with plenty of performance, allowing for a smooth and focused workflow.
+
+From now on, I want to learn more about C++ so that I can learn my first graphics API, **OpenGL**, and begin my next project. I really am excited for this. Last, but no less important, I wanted to thank my friend **Kailany** for doing this simple pixel art for the rom selection screen. I didn't want to bother her, so I asked for something real simple.
+
+## 📚 Credits & References
+
+* **Cowgod's CHIP-8 Technical Reference:** Primary technical guide for opcode logic and memory mapping.
+* **Mastering CHIP-8:** Essential reference for timer frequencies and advanced instruction nuances.
+* **Artwork:** Special thanks to **Kailany** for the custom pixel art branding.
+* **Educational Foundation:** Appreciation to the community at [LearnCPP.com](https://www.learncpp.com/) for the C++ fundamentals.
+
+---
+Developed as a foundational step toward Graphics Programming by a Computer Science student at **UFERSA**.
