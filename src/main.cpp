@@ -68,7 +68,7 @@ int main()
     constexpr int windowScale{ 20 };
 
     // SFML setup
-    sf::RenderWindow window( sf::VideoMode( { windowWidth * windowScale, windowHeight * windowScale} ), "CHIP-8" );
+    sf::RenderWindow window( sf::VideoMode( { windowWidth * windowScale, windowHeight * windowScale} ), "2[E]mu" );
     window.setFramerateLimit(60);
     sf::Clock deltaClock{};
 
@@ -106,7 +106,7 @@ int main()
     // font setup
     sf::Font font{};
 
-    if (!font.openFromFile("../PressStart2P-Regular.ttf")) 
+    if (!font.openFromFile("../assets/PressStart2P-Regular.ttf")) 
     {
         std::cerr << "Error loading font.\n";
         return -1; // Error loading

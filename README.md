@@ -2,6 +2,8 @@
 
 A high-performance **CHIP-8 Virtual Machine** implemented in **Modern C++20**. This project focuses on cycle-accurate emulation and provides a robust real-time debugging suite for low-level software analysis.
 
+![Pong](assets/pong.png)
+
 ## 🏛️ System Architecture
 
 This emulator implements the standard CHIP-8 specifications with a focus on **Systems Programming** best practices:
@@ -63,6 +65,15 @@ The main loop utilizes a **Fixed-Timestep** algorithm via `<chrono>`:
 ```bash
 cmake -B build
 cmake --build build
+```
+
+## 📸 Media & Demos
+
+### Main Interface
+![2[E]mu Main Screen](assets/main_screen.png)
+
+### Integrated Debugger in Action
+![Debugger View](assets/debugger_view.png)
 
 ## ✍️ Author's Note
 
