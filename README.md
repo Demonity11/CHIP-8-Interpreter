@@ -1,4 +1,4 @@
-# CHIP-8 Emulator & Integrated ImGui Debugger
+# 2[E]mu, a CHIP-8 Interpreter & Integrated ImGui Debugger
 
 A high-performance **CHIP-8 Virtual Machine** implemented in **Modern C++20**. This project focuses on cycle-accurate emulation and provides a robust real-time debugging suite for low-level software analysis.
 
@@ -69,7 +69,7 @@ cmake --build build
 
 What can I say? This was a really fun project to make. I am currently a first-semester Computer Science student at **UFERSA (Campus Mossoró)**. My trajectory until now was deciding that I want to be a graphics programmer, so after that I started learning C++ from [learncpp.com](https://www.learncpp.com/) (C++ is not my first language) and got a solid base to work on. 
 
-Nonetheless, there is more to learn. I began this project because I wanted to build something; I was really anxious to do that. It was fun to apply bitwise operations, break my head thinking how to use the graphics library SFML, create a debugger via Dear ImGui and code C++ in general. This entire project was developed on a Windows desktop with plenty of performance, allowing for a smooth and focused workflow.
+Nonetheless, there is more to learn. I began this project because I wanted to build something; I was really anxious to do that. It was fun to apply bitwise operations, break my head thinking how to use the graphics library SFML, create a debugger via Dear ImGui and code C++ in general. 
 
 From now on, I want to learn more about C++ so that I can learn my first graphics API, **OpenGL**, and begin my next project. I really am excited for this. Last, but no less important, I wanted to thank my friend **Kailany** for doing this simple pixel art for the rom selection screen. I didn't want to bother her, so I asked for something real simple.
 
