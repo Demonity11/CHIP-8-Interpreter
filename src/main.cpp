@@ -78,6 +78,13 @@ int main()
 
     // textures setup
     sf::Texture gameWindow(sf::Vector2u(windowWidth, windowHeight));
+    sf::Texture romSelectionWindow{};
+
+    if (!romSelectionWindow.loadFromFile("../assets/2emu_logo.png", false, sf::IntRect({0, 0}, {64,32})))
+    {
+        std::cerr << "Error. '2emu_logo.png' not found.\n";
+        return -1;
+    }
 
 	// sound setup
     constexpr unsigned int SAMPLE_RATE{ 44100 };
@@ -256,13 +263,23 @@ int main()
         }
         
         // paused because when we step, we want to see things updating on screen
+
         if (emulatorState == EmulatorState::Running || emulatorState == EmulatorState::Paused)
         {
             display = getDisplay(cpu);
             gameWindow.update(display.data());
         }
 
-        sf::Sprite gameWindowSprite(gameWindow);
+        // else
+        // {
+        //     if (!gameWindow.loadFromFile("../assets/2emu_logo.png", false, sf::IntRect({0, 0}, {64, 32})))
+        //     {
+        //         std::cerr << "Error. '2emu_logo' not found.\n";
+        //         return -1;
+        //     }
+        // }
+
+        sf::Sprite gameWindowSprite((emulatorState == EmulatorState::Running) ? gameWindow : romSelectionWindow);
         gameWindowSprite.setScale(sf::Vector2f(windowScale, windowScale));
         
         // ImGui
@@ -291,7 +308,7 @@ int main()
         }
 
         // SFML drawing functions
-        window.clear(sf::Color::Black);
+        window.clear( (emulatorState == EmulatorState::Running) ? sf::Color::Black : sf::Color::White );
         window.draw( gameWindowSprite );
         window.draw( fpsCounter );
 
