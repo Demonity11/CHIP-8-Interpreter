@@ -10,7 +10,7 @@
 
 #include "Chip8.h"
 #include "Debugger.h"
-#include "disassembler.h"
+#include "Disassembler.h"
 #include "Opcodes.h"
 #include "Utilities.h"
 
