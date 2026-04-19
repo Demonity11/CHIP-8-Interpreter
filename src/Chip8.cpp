@@ -152,7 +152,7 @@ std::string Chip8::getCallStack(int index) const
 {
     std::stringstream ss{};
 
-    ss << std::hex << std::uppercase << "Stack #" << index << m_stack[index];
+    ss << std::hex << std::uppercase << "Stack#" << index << ": 0x" << std::setw(4) << std::setfill('0') << m_stack[index];
 
     std::string hexString{ ss.str() };
 
