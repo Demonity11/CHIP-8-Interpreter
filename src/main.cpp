@@ -393,7 +393,7 @@ void showDebugger(sf::RenderWindow& window, Debugger& debugger, Chip8& cpu)
                 ImGui::Text("SP: 0x%02X", cpu.getSP());
                 ImGui::Text("DT: 0x%02X", cpu.getDelayTimer());
                 ImGui::Text("ST: 0x%02X", cpu.getSoundTimer());
-                ImGui::Text("I: 0x%04X", cpu.getI());
+                ImGui::Text("I:  0x%04X", cpu.getI());
 
                 if (cpu.isWaitingForKey()) ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "STATUS: WAITING FOR KEY");
 
