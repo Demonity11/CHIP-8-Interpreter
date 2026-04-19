@@ -1,26 +1,6 @@
-#include "chip8.h"
-#include <sstream>
-
-std::vector<std::string> getMemoryContent(const Chip8& cpu, int fileSize) // print all opcodes loaded into memory
-{
-    if (fileSize == -1) // if fileSize = -1, then there was an error when loading the file into memory
-    {
-        std::cerr << "Error. A file is not loaded into memory.\n";
-        return {};
-    }
-
-    const int romAddress{ 0x200 }; // roms are loaded from 0x200 onward in chip8
-    std::vector<std::string> memoryContent{};
-
-    for (int address{ romAddress }; address < romAddress + fileSize; address += 2)
-    {
-        std::uint16_t opcode = (cpu.memory[address] << 8) | cpu.memory[address + 1];
-
-        memoryContent.push_back(hexToString(address, 4) + ": " + disassembler(opcode));
-    }
-
-    return memoryContent;
-}
+#include "Chip8.h"
+#include "disassembler.h"
+#include "Utilities.h"
 
 std::string getFPS(double averageFPS)
 {
@@ -55,28 +35,6 @@ std::string getOpcodeConvertedToString(std::uint16_t opcode)
     ss << std::hex << std::uppercase << std::setw(4) << std::setfill('0') << opcode;
 
     std::string hexString{ "0x" + ss.str() };
-
-    return hexString;
-}
-
-std::string getCallStack(const Chip8& cpu, int index)
-{
-    std::stringstream ss{};
-
-    ss << std::hex << std::uppercase << "Stack #" << index << cpu.stack[index];
-
-    std::string hexString{ ss.str() };
-
-    return hexString;
-}
-
-std::string getRegister(const Chip8& cpu, int index)
-{
-    std::stringstream ss{};
-
-    ss << std::hex << std::uppercase << "V" << index << " = 0x" << std::setw(2) << std::setfill('0') << cpu.V[index];
-
-    std::string hexString{ ss.str() };
 
     return hexString;
 }

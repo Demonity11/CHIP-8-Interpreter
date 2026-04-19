@@ -32,8 +32,9 @@ FetchContent_MakeAvailable(SFML imgui-sfml)
 
 add_executable(main 
     src/main.cpp 
-    src/chip8.cpp 
-    src/opcodes.cpp 
+    src/Chip8.cpp 
+    src/Opcodes.cpp 
+    src/Debugger.cpp 
     src/disassembler.cpp
 )
 

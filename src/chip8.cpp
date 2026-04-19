@@ -1,4 +1,5 @@
-#include "../include/chip8.h"
+#include "Chip8.h"
+#include "disassembler.h"
 
 constexpr std::uint8_t fontSet[]
 {
@@ -20,134 +21,31 @@ constexpr std::uint8_t fontSet[]
     0xF0, 0x80, 0xF0, 0x80, 0x80   // F
 }; 
 
-std::uint16_t fetch(Chip8& cpu)
-{
-    std::uint16_t highByte = (cpu.memory[cpu.pc] << 8);
-    std::uint16_t lowByte = cpu.memory[cpu.pc + 1];
-    
-    std::uint16_t opcode = highByte | lowByte;
-    
-    cpu.pc += 2;
-
-    return opcode;
-}
-
-void decode(Chip8& cpu, std::uint16_t opcode)
-{
-    std::uint16_t firstNibble = (opcode >> 12) & 0x000F;
-    std::uint16_t lastNibble = opcode & 0x000F;
-
-    switch (firstNibble)
-    {
-    case 0x0:
-        if (opcode == 0x00E0) op_00E0(cpu, opcode);
-
-        if (opcode == 0x00EE) op_00EE(cpu, opcode);
-
-        break;
-
-    case 0xA: op_Annn(cpu, opcode); break;
-
-    case 0x1: op_1nnn(cpu, opcode); break;
-
-    case 0x2: op_2nnn(cpu, opcode); break;
-
-    case 0x3: op_3xkk(cpu, opcode); break;
-
-    case 0x4: op_4xkk(cpu, opcode); break;
-    
-    case 0x5: op_5xy0(cpu, opcode); break;
-
-    case 0x6: op_6xkk(cpu, opcode); break;
-
-    case 0x7: op_7xkk(cpu, opcode); break;
-    
-    case 0x8:
-        switch (lastNibble)
-        {
-        case 0x0: op_8xy0(cpu, opcode); break;
-
-        case 0x1: op_8xy1(cpu, opcode); break;
-        
-        case 0x2: op_8xy2(cpu, opcode); break;
-            
-        case 0x3: op_8xy3(cpu, opcode); break;
-
-        case 0x4: op_8xy4(cpu, opcode); break;
-
-        case 0x5: op_8xy5(cpu, opcode); break;
-
-        case 0x6: op_8xy6(cpu, opcode); break;
-
-        case 0x7: op_8xy7(cpu, opcode); break;
-
-        case 0xE: op_8xyE(cpu, opcode); break;
-        }
-        break;
-
-    case 0x9: op_9xy0(cpu, opcode); break;
-
-    case 0xB: op_Bnnn(cpu, opcode); break;
-
-    case 0xC: op_Cxkk(cpu, opcode); break;
-
-    case 0xD: op_Dxyn(cpu, opcode); break;
-    
-    case 0xE:
-        if (lastNibble == 0xE) op_Ex9E(cpu, opcode);
-        if (lastNibble == 0x1) op_ExA1(cpu, opcode);
-        
-        break;
-
-    case 0xF:
-        switch (opcode & 0x00FF)
-        {
-        case 0x07: op_Fx07(cpu, opcode); break;
-
-        case 0x0A: op_Fx0A(cpu, opcode); break;
-
-        case 0x15: op_Fx15(cpu, opcode); break;
-
-        case 0x55: op_Fx55(cpu, opcode); break;
-
-        case 0x65: op_Fx65(cpu, opcode); break;
-
-        case 0x18: op_Fx18(cpu, opcode); break;
-
-        case 0x1E: op_Fx1E(cpu, opcode); break;
-
-        case 0x29: op_Fx29(cpu, opcode); break;
-
-        case 0x33: op_Fx33(cpu, opcode); break;
-        }
-    }
-}
-
 // before loading another rom, we want to clear the state of the machine
-void reset(Chip8& cpu) 
+void Chip8::reset() 
 {
-    cpu.pc = 0x200; 
+    pc = 0x200; 
 
-    std::fill(std::begin(cpu.V), std::end(cpu.V), 0);
+    std::fill(std::begin(V), std::end(V), 0);
 
-    cpu.I = 0;
-    cpu.sp = 0;
+    I = 0;
+    sp = 0;
 
-    std::fill(std::begin(cpu.stack), std::end(cpu.stack), 0);
+    std::fill(std::begin(stack), std::end(stack), 0);
 
-    cpu.delayTimer = 0;
-    cpu.soundTimer = 0;
+    delayTimer = 0;
+    soundTimer = 0;
 
-    std::fill(std::begin(cpu.memory) + 80, std::end(cpu.memory), 0);
+    std::fill(std::begin(memory) + 80, std::end(memory), 0);
 
-    std::fill(std::begin(cpu.display), std::end(cpu.display), 0);
+    std::fill(std::begin(display), std::end(display), 0);
 }
 
-void loadFontSprites(Chip8& cpu)
+void Chip8::loadFontSprites()
 {
     const int fontInitialAddress{ 0x50 };
 
-    if (cpu.memory[fontInitialAddress] != 0x00)
+    if (memory[fontInitialAddress] != 0x00)
     {
         std::cerr << "Error. Font sprites can only be loaded one time.\n";
         return;
@@ -155,119 +53,132 @@ void loadFontSprites(Chip8& cpu)
 
     for (int i{ 0 }; i < 80; ++i) // 80 is the size of the fontSet array
     {
-        cpu.memory[fontInitialAddress + i] = fontSet[i];
+        memory[fontInitialAddress + i] = fontSet[i];
     }
 
     std::cout << "Font sprites loaded into memory.\n";
 }
 
-int loadROM(Chip8& cpu, const std::string& filename) // loads the rom into memory
+void Chip8::loadROM() // loads the rom into memory
 {
     const int romAddress{ 0x200 };
 
-    if (cpu.memory[romAddress + 1] != 0x00) // clears the memory if a file is already loaded into memory
-        reset(cpu);
+    if (memory[romAddress + 1] != 0x00) // clears the memory if a file is already loaded into memory
+        reset();
 
     std::ifstream file("roms/" + filename, std::ios::binary | std::ios::ate);
 
     if (file.is_open()) 
     {
-        std::streampos fileSize = file.tellg();
+        std::streampos romSize = file.tellg();
         file.seekg(0, std::ios::beg);
 
-        if (fileSize > (4096 - 512)) // if the file being read is bigger than the available space in memory, then we don't want to load in the memory
+        if (romSize > (4096 - 512)) // if the file being read is bigger than the available space in memory, then we don't want to load in the memory
         {
             std::cerr << "Error. ROM's size is bigger than the available space.\n";
-            return -1;
+            fileSize = -1;
+            return;
         }
 
-        file.read(reinterpret_cast<char*>(&cpu.memory[romAddress]), fileSize);
+        file.read(reinterpret_cast<char*>(&memory[romAddress]), romSize);
 
         file.close();
 
         std::cout << filename << " was successfully loaded into memory.\n";
 
-        return fileSize; // returns the file's size
+        fileSize = romSize; // returns the file's size
+        return;
     }
 
     std::cerr << "Error. File not loaded into memory.\n";
 
-    return -1; 
+    fileSize = -1; 
 }
 
-void printROM(const Chip8& cpu, int fileSize) // print all opcodes loaded into memory
-{
-    if (fileSize == -1) // if fileSize = -1, then there was an error when loading the file into memory
-    {
-        std::cerr << "Error. A file is not loaded into memory.\n";
-        return;
-    }
-
-    const int romAddress{ 0x200 }; // roms are loaded from 0x200 onward in chip8
-
-    for (int i{ romAddress }; i < romAddress + fileSize; i += 2)
-    {
-        std::uint16_t opcode = (cpu.memory[i] << 8) | cpu.memory[i + 1];
-
-        std::cout << "opcode: 0x" << std::hex << std::uppercase << std::setw(4) << std::setfill('0') << opcode;
-        std::cout << " address: 0x" << std::hex << std::uppercase << std::setw(3) << std::setfill('0') << i << "\n";
-    }
-}
-
-std::vector<std::uint8_t> getDisplay(const Chip8& cpu)
+std::vector<std::uint8_t> Chip8::getDisplay()
 {   
-    std::vector<std::uint8_t> display(64 * 32 * 4);
+    std::vector<std::uint8_t> vec_display(64 * 32 * 4);
 
     for (int i{ 0 }; i < 64 * 32; ++i)
     {
-        if (cpu.display[i] == 1)
+        if (display[i] == 1)
         {
-            display[i * 4]     = 255;
-            display[i * 4 + 1] = 255;
-            display[i * 4 + 2] = 255;
-            display[i * 4 + 3] = 255;
+            vec_display[i * 4]     = 255;
+            vec_display[i * 4 + 1] = 255;
+            vec_display[i * 4 + 2] = 255;
+            vec_display[i * 4 + 3] = 255;
         }
 
-        if (cpu.display[i] == 0)
+        if (display[i] == 0)
         {
-            display[i * 4]     = 0;
-            display[i * 4 + 1] = 0;
-            display[i * 4 + 2] = 0;
-            display[i * 4 + 3] = 255;
+            vec_display[i * 4]     = 0;
+            vec_display[i * 4 + 1] = 0;
+            vec_display[i * 4 + 2] = 0;
+            vec_display[i * 4 + 3] = 255;
         }
     }
 
-    return display;
+    return vec_display;
 }
 
-void printDisplay(const Chip8& cpu) // print the contents of the display array
+void Chip8::printDisplay() // print the contents of the display array
 {
     const int displaySize{ 64 * 32 };
 
     for (int i{ 0 }; i < displaySize; ++i)
     {
-        std::cout << (cpu.display[i] == 1 ? static_cast<char>(219) : ' '); // 219 = █ in ASCII Table
+        std::cout << (display[i] == 1 ? static_cast<char>(219) : ' '); // 219 = █ in ASCII Table
 
         if ((i + 1) % 64 == 0)
             std::cout << "\n"; // ends line when each row is printed
     }
 }
 
-Chip8 init(const std::string& romName, DebuggerViewState& debugger, bool isDebugging=false)
+std::vector<std::string> Chip8::getMemoryContent() const // print all opcodes loaded into memory
 {
-    Chip8 cpu{};
+    if (fileSize == -1) // if fileSize = -1, then there was an error when loading the file into memory
+    {
+        std::cerr << "Error. A file is not loaded into memory.\n";
+        return {};
+    }
 
-    loadFontSprites(cpu);
-    
-	int fileSize{ loadROM(cpu, romName) };
+    const int romAddress{ 0x200 }; // roms are loaded from 0x200 onward in chip8
+    std::vector<std::string> memoryContent{};
 
-    if (isDebugging)
-        initDebugger(cpu, debugger, fileSize);
+    for (int address{ romAddress }; address < romAddress + fileSize; address += 2)
+    {
+        std::uint16_t opcode = (memory[address] << 8) | memory[address + 1];
 
-    return cpu;
+        memoryContent.push_back(hexToString(address, 4) + ": " + disassembler(opcode));
+    }
+
+    return memoryContent;
 }
 
-void initDebugger(const Chip8& cpu, DebuggerViewState& debugger, int fileSize)
+std::string Chip8::getCallStack(int index) const
 {
-    debugger.disassembledInstructions = getMemoryContent(cpu, fileSize);
+    std::stringstream ss{};
+
+    ss << std::hex << std::uppercase << "Stack #" << index << stack[index];
+
+    std::string hexString{ ss.str() };
+
+    return hexString;
+}
+
+std::string Chip8::getRegister(int index) const
+{
+    std::stringstream ss{};
+
+    ss << std::hex << std::uppercase << "V" << index << ": 0x" << std::setw(2) << std::setfill('0') << V[index];
+
+    std::string hexString{ ss.str() };
+
+    return hexString;
+}
+
+void Chip8::init()
+{
+    loadFontSprites();
+    loadROM();
 }

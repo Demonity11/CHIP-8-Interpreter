@@ -7,18 +7,58 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <sstream>
 
-namespace Masks
+class Chip8 // the chip 8 cpu works at a clock of 500 instructions per second (500 Hz)
 {
-	constexpr std::uint16_t nnn{ 0x0FFF }; // extracts the lower 12 bits
-	constexpr std::uint16_t n{ 0x000F }; // extracts the lower 4 bits
-	constexpr std::uint16_t x{ 0x0F00 }; // extracts the lower byte of the highbyte
-	constexpr std::uint16_t y{ 0x00F0 }; // extracts the higher byte of the lowbyte
-	constexpr std::uint16_t kk{0x00FF}; // extracts the lower 8 bits
-}
+public:
+	enum State
+	{
+		RomSelection,
+		Running,
+		Paused,
+	};
 
-struct Chip8 // the chip 8 cpu works at a clock of 500 instructions per second (500 Hz)
-{
+	auto loadROM() 											-> void; 										 
+	auto loadFontSprites()      							-> void;
+	auto reset() 						  					-> void;
+	auto printDisplay()										-> void;
+	auto init() 											-> void;
+	auto getDisplay()										-> std::vector<std::uint8_t>;
+	auto getOpcodeConvertedToString(std::uint16_t opcode)   -> std::string;
+
+	std::vector<std::string> getMemoryContent() const;
+	std::string getCallStack(int index) const;
+	std::string getRegister(int index) const;
+
+	void setState(State emuState) { state = emuState; }
+	State getState() const { return state; }
+
+	void setKeyBeingPressed(std::uint8_t key) { keyBeingPressed = key; }
+	std::uint8_t getKeyBeingPressed() const { return keyBeingPressed; }
+
+	void setKeypad(int index, std::uint8_t key) { keypad[index] = key; }
+	std::uint8_t getKeypad(int index) const { return keypad[index]; }
+
+	void waitForKey(bool b) { waitForAKeyPress = b; }
+	bool isWaitingForKey() const { return waitForAKeyPress; }
+
+	void decrementDelayTimer() { --delayTimer; }
+	std::uint8_t getDelayTimer() const { return delayTimer; }
+
+	void decrementSoundTimer() { --soundTimer; }
+	std::uint8_t getSoundTimer() const { return soundTimer; }
+
+	std::uint16_t getPC() const { return pc; }
+	std::uint8_t getSP() const { return sp; }
+	std::uint16_t getI() const { return I; }
+
+	void setFilename(const std::string& file) { filename = file; }
+	std::string getFilename() { return filename; }
+
+	friend class Opcodes;
+
+private:
 	std::uint8_t memory[4096]{}; // most programs starts at 0x200 (512)
 	std::uint8_t V[16]{}; // general purpose 8-bit registers
 	std::uint16_t I{}; // used to store addresses
@@ -40,95 +80,10 @@ struct Chip8 // the chip 8 cpu works at a clock of 500 instructions per second (
 
 	bool waitForAKeyPress{ false }; // when this is true, the program should stop the pc until a key is pressed
 	std::uint8_t keyBeingPressed{0xFF}; // 0xFF it will represent the that nothing is being pressed, otherwise it will store a number from 0x to 0xF
+	State state{State::RomSelection};
+
+	std::string filename{};
+	int fileSize{};
 };
-
-enum class EmulatorState
-{
-	RomSelection,
-	Running,
-	Paused,
-};
-
-struct DebuggerViewState {
-    std::vector<std::string> disassembledInstructions;
-    int currentLineIndex{ 0 };
-
-    int visibleLinesCount{ 15 };
-    int topVisibleLine{ 0 };
-
-    bool isPaused{ false };
-    bool stepMode{ false };
-	bool showDebugger{ true };
-
-    std::string pcString{};
-    std::string iString{};
-    std::vector<std::string> vRegisterStrings{};
-};
-
-struct FPS
-{
-    double accumulator{ 0 };
-    int frames{ 0 };
-    double average{};
-};
-
-// forward declarations for "chip8.cpp"
-auto decode(Chip8& cpu, std::uint16_t opcode)         										 -> void;
-auto fetch(Chip8& cpu) 								  										 -> std::uint16_t;
-auto loadROM(Chip8& cpu, const std::string& filename) 										 -> int;
-auto loadFontSprites(Chip8& cpu)                      										 -> void;
-auto reset(Chip8& cpu) 						  				 								 -> void;
-auto printROM(const Chip8& cpu, int fileSize) 		  				 						 -> void;
-auto printDisplay(const Chip8& cpu) 				  				 						 -> void;
-auto init(const std::string& romName, DebuggerViewState& debugger, bool isDebugging) 	 	 -> Chip8;
-auto initDebugger(const Chip8& cpu, DebuggerViewState& debugger, int fileSize) 				 -> void;
-auto getDisplay(const Chip8& cpu) 															 -> std::vector<std::uint8_t>;
-auto getOpcodeConvertedToString(std::uint16_t opcode)            						     -> std::string;
-
-// forward declarations for "opcodes.cpp"
-void op_00E0(Chip8& cpu, std::uint16_t opcode);
-void op_00EE(Chip8& cpu, std::uint16_t opcode);
-void op_Annn(Chip8& cpu, std::uint16_t opcode);
-void op_1nnn(Chip8& cpu, std::uint16_t opcode);
-void op_2nnn(Chip8& cpu, std::uint16_t opcode);
-void op_3xkk(Chip8& cpu, std::uint16_t opcode);
-void op_4xkk(Chip8& cpu, std::uint16_t opcode);
-void op_5xy0(Chip8& cpu, std::uint16_t opcode);
-void op_6xkk(Chip8& cpu, std::uint16_t opcode);
-void op_7xkk(Chip8& cpu, std::uint16_t opcode);
-void op_8xy0(Chip8& cpu, std::uint16_t opcode);
-void op_8xy1(Chip8& cpu, std::uint16_t opcode);
-void op_8xy2(Chip8& cpu, std::uint16_t opcode);
-void op_8xy3(Chip8& cpu, std::uint16_t opcode);
-void op_8xy4(Chip8& cpu, std::uint16_t opcode);
-void op_8xy5(Chip8& cpu, std::uint16_t opcode);
-void op_8xy6(Chip8& cpu, std::uint16_t opcode);
-void op_8xy7(Chip8& cpu, std::uint16_t opcode);
-void op_8xyE(Chip8& cpu, std::uint16_t opcode);
-void op_9xy0(Chip8& cpu, std::uint16_t opcode);
-void op_Bnnn(Chip8& cpu, std::uint16_t opcode);
-void op_Cxkk(Chip8& cpu, std::uint16_t opcode);
-void op_Dxyn(Chip8& cpu, std::uint16_t opcode);
-void op_Ex9E(Chip8& cpu, std::uint16_t opcode); 
-void op_ExA1(Chip8& cpu, std::uint16_t opcode); 
-void op_Fx07(Chip8& cpu, std::uint16_t opcode);
-void op_Fx0A(Chip8& cpu, std::uint16_t opcode); 
-void op_Fx15(Chip8& cpu, std::uint16_t opcode);
-void op_Fx18(Chip8& cpu, std::uint16_t opcode);
-void op_Fx1E(Chip8& cpu, std::uint16_t opcode);
-void op_Fx29(Chip8& cpu, std::uint16_t opcode);
-void op_Fx33(Chip8& cpu, std::uint16_t opcode);
-void op_Fx55(Chip8& cpu, std::uint16_t opcode);
-void op_Fx65(Chip8& cpu, std::uint16_t opcode);
-
-// forward declarations for disassembler.cpp
-auto hexToString(std::uint16_t hex, int size) 		  -> std::string;
-auto getRegisterName(std::uint16_t regIndex)  		  -> std::string;
-auto getOpcodeConvertedToString(std::uint16_t opcode) -> std::string;
-auto getCallStack(const Chip8& cpu, int index) 		  -> std::string;
-auto disassembler(std::uint16_t opcode) 			  -> std::string;
-auto getFPS(double averageFPS)						  -> std::string;
-auto getRegister(const Chip8& cpu, int index)		  -> std::string;
-auto getMemoryContent(const Chip8& cpu, int fileSize) -> std::vector<std::string>;
 
 #endif

@@ -2,25 +2,29 @@
 #include <cmath>
 #include <map>
 #include <filesystem>
+
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
-#include "../include/chip8.h"
 #include "imgui.h"
 #include "imgui-SFML.h"
 
+#include "Chip8.h"
+#include "Debugger.h"
+#include "disassembler.h"
+#include "Opcodes.h"
+#include "Utilities.h"
+
 // foward declarations
-void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState& debugger, const Chip8& cpu, EmulatorState& emulatorState);
-std::optional<std::string> romSelection(bool& isDebugging, bool& showFPS, sf::RenderWindow& window);
+void showDebugger(sf::RenderWindow& window, Debugger& debugger, Chip8& cpu);
+std::optional<std::string> romSelection(Debugger& debugger, bool& showFPS, sf::RenderWindow& window);
 
 int main()
 {   
-    EmulatorState emulatorState{ EmulatorState::RomSelection };
+    // Debugger initialization
+    Debugger debugger{};
 
-    std::string filename{};
-
-    // Debugger setup
-    bool isDebugging{ false };
-    DebuggerViewState debugger{};
+    // Opcodes initialization
+    Opcodes opcode{};
 
     // Main Menu Bar State
     bool showMainMenu{ true };
@@ -46,11 +50,10 @@ int main()
         {sf::Keyboard::Scan::V, 0xF}
     };
 
-    // Chip-8 setup
+    // Chip-8 initialization
     Chip8 cpu{};
 
     std::vector<std::uint8_t> display(64 * 32 * 4);
-    std::uint16_t opcode{};
     
     // timers setup
     using Milliseconds = std::chrono::duration<double, std::milli>;
@@ -168,9 +171,9 @@ int main()
 
                 if (key == sf::Keyboard::Scan::F1) // reload the game. This is for games that freezes when you lose.
                 {
-                    if (filename != "")
+                    if (cpu.getFilename() != "")
                     {
-                        cpu = init(filename, debugger, isDebugging);
+                        cpu.init();
 
                         timerAccumulator = 0;
                         cycleAccumulator = 0;
@@ -183,8 +186,8 @@ int main()
                 {
                     if (keyMapping.count(key) != 0)
                     {
-                        cpu.keyBeingPressed = keyMapping.at(key);
-                        cpu.keypad[keyMapping.at(key)] = 0x1;
+                        cpu.setKeyBeingPressed(keyMapping.at(key));
+                        cpu.setKeypad(keyMapping.at(key), 0x1);
                     }
                 }
             }
@@ -200,38 +203,38 @@ int main()
 
                 if (keyMapping.count(key) != 0)
                 {
-                    cpu.keyBeingPressed = 0xFF;
-                    cpu.keypad[keyMapping.at(key)] = 0x0;
+                    cpu.setKeyBeingPressed(0xFF);
+                    cpu.setKeypad(keyMapping.at(key), 0x0);
                 }
             }
 		}
 
-        if (debugger.stepMode) // if the Step button is clicked, then we enter here and execute exactly one instruction. 
+        if (debugger.isSteping()) // if the Step button is clicked, then we enter here and execute exactly one instruction. 
         {
-            if (!cpu.waitForAKeyPress)
+            if (!cpu.isWaitingForKey())
             {
-                opcode = fetch(cpu);
+                opcode.fetch(cpu);
             }
             
-            decode(cpu, opcode);
+            opcode.decode(cpu);
 
-            debugger.stepMode = false;
+            debugger.setStepMode(false);
         }
 
         while (cycleAccumulator >= timePerCycle.count()) // fetch-decode-execute cycle at 500 Hz
         {
             cycleAccumulator -= timePerCycle.count();
 
-            if (emulatorState == EmulatorState::Running) // if the emulator is not paused, then we fetch-decode-execute
+            if (cpu.getState() == Chip8::Running) // if the emulator is not paused, then we fetch-decode-execute
             {
-                if (cpu.waitForAKeyPress)
+                if (cpu.isWaitingForKey())
                 {
-                    decode(cpu, opcode);
+                    opcode.decode(cpu);
                     continue;
                 }
     
-                opcode = fetch(cpu);
-                decode(cpu, opcode);
+                opcode.fetch(cpu);
+                opcode.decode(cpu);
             }
         }
 
@@ -240,14 +243,15 @@ int main()
             ++fps.frames;
             timerAccumulator -= timePerTimer.count();
 
-            if (emulatorState == EmulatorState::Running)
+            if (cpu.getState() == Chip8::Running)
             {
-                if (cpu.delayTimer > 0) 
-                    cpu.delayTimer--;
+                if (cpu.getDelayTimer() > 0) 
+                    cpu.decrementDelayTimer();
     
-                if (cpu.soundTimer > 0) 
+                if (cpu.getSoundTimer() > 0) 
                 {
-                    cpu.soundTimer--;
+                    cpu.decrementSoundTimer();
+
                     if (sound.getStatus() != sf::Sound::Status::Playing)
                     {
                         sound.play();
@@ -264,43 +268,42 @@ int main()
         }
         
         // paused because when we step, we want to see things updating on screen
-
-        if (emulatorState == EmulatorState::Running || emulatorState == EmulatorState::Paused)
+        if (cpu.getState() == Chip8::Running || cpu.getState() == Chip8::Paused)
         {
-            display = getDisplay(cpu);
+            display = cpu.getDisplay();
             gameWindow.update(display.data());
         }
 
-        sf::Sprite gameWindowSprite((emulatorState == EmulatorState::Running || emulatorState == EmulatorState::Paused) ? gameWindow : romSelectionWindow);
+        sf::Sprite gameWindowSprite((cpu.getState() == Chip8::Running || cpu.getState() == Chip8::Paused) ? gameWindow : romSelectionWindow);
         gameWindowSprite.setScale(sf::Vector2f(windowScale, windowScale));
         
         // ImGui
         ImGui::SFML::Update(window, deltaClock.restart());
 
         // ImGui debugger interface
-        if (isDebugging)
+        if (debugger.isDebugging())
         {
-            showDebugger(isDebugging, window, debugger, cpu, emulatorState);
+            showDebugger(window, debugger, cpu);
         }
 
         // ImGui rom selection interface
         
         if (showMainMenu)
         {
-            auto newFile { romSelection(isDebugging, showFPS, window) }; // under construction.
+            auto newFile { romSelection(debugger, showFPS, window) };
     
             if (newFile)
             {
-                filename = *newFile;
+                cpu.setFilename(*newFile);
 
-                cpu = init(filename, debugger, isDebugging);
-                emulatorState = EmulatorState::Running;
+                cpu.init();
+                cpu.setState(Chip8::Running);
                 showMainMenu = false;
             }
         }
 
         // SFML drawing functions
-        window.clear( (emulatorState == EmulatorState::Running) ? sf::Color::Black : sf::Color::White );
+        window.clear( (cpu.getState() == Chip8::Running) ? sf::Color::Black : sf::Color::White );
         window.draw( gameWindowSprite );
 
         if (showFPS)
@@ -316,35 +319,37 @@ int main()
     return 0;
 }
 
-void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState& debugger, const Chip8& cpu, EmulatorState& emulatorState)
+void showDebugger(sf::RenderWindow& window, Debugger& debugger, Chip8& cpu)
 {
-    if (isDebugging)
+    if (debugger.isDebugging())
     {
-        ImGui::Begin("Debugger", &debugger.showDebugger, ImGuiWindowFlags_None);
+        ImGui::Begin("Debugger", &debugger.isDebugging(), ImGuiWindowFlags_None);
         
         if (ImGui::BeginTabBar("DebuggerTabs"))
         {
             if (ImGui::BeginTabItem("Instructions"))
             {
-                int offset{ (cpu.pc > 0x200) ? 2 : 0 }; // if the address greater than 0x200, then we subtract 2 from baseIndex
-                int baseIndex{ (cpu.pc - 0x200 - offset) / 2 };
+                debugger.setAllInstructions(cpu.getMemoryContent());
+
+                int offset{ (cpu.getPC() > 0x200) ? 2 : 0 }; // if the address greater than 0x200, then we subtract 2 from baseIndex
+                int baseIndex{ (cpu.getPC() - 0x200 - offset) / 2 };
         
-                for (int i{ 0 }; i < debugger.visibleLinesCount; ++i)
+                for (int i{ 0 }; i < debugger.getVisibleLinesCount(); ++i)
                 {
                     int index{ baseIndex + i };
         
-                    if (index >= 0 && index < static_cast<int>(debugger.disassembledInstructions.size()))
+                    if (index >= 0 && index < static_cast<int>(debugger.getAllInstructions().size()))
                     {
                         if (i == 0)
                         {
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red color
-                            ImGui::Text(debugger.disassembledInstructions[index].c_str());
+                            ImGui::Text(debugger.getInstruction(index).c_str());
                             ImGui::PopStyleColor();
                         }
 
                         else 
                         {
-                            ImGui::TextUnformatted(debugger.disassembledInstructions[index].c_str());
+                            ImGui::TextUnformatted(debugger.getInstruction(index).c_str());
                         }
                     }
                 }
@@ -358,7 +363,7 @@ void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState&
                     for (int i = 0; i < 16; i++)
                     {
                         ImGui::TableNextColumn();
-                        ImGui::Text("V%X: 0x%02X", i, cpu.V[i]);
+                        ImGui::TextUnformatted(cpu.getRegister(i).c_str());
                     }
     
                     ImGui::EndTable();
@@ -373,7 +378,7 @@ void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState&
                     for (int i = 0; i < 16; i++)
                     {
                         ImGui::TableNextColumn();
-                        ImGui::Text("S%X: 0x%02X", i, cpu.stack[i]);
+                        ImGui::TextUnformatted(cpu.getCallStack(i).c_str());
                     }
     
                     ImGui::EndTable();
@@ -383,13 +388,13 @@ void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState&
     
             if (ImGui::BeginTabItem("Other"))
             {
-                ImGui::Text("PC: 0x%04X", cpu.pc);
-                ImGui::Text("SP: 0x%02X", cpu.sp);
-                ImGui::Text("DT: 0x%02X", cpu.delayTimer);
-                ImGui::Text("ST: 0x%02X", cpu.soundTimer);
-                ImGui::Text("I: 0x%04X", cpu.I);
+                ImGui::Text("PC: 0x%04X", cpu.getPC());
+                ImGui::Text("SP: 0x%02X", cpu.getSP());
+                ImGui::Text("DT: 0x%02X", cpu.getDelayTimer());
+                ImGui::Text("ST: 0x%02X", cpu.getSoundTimer());
+                ImGui::Text("I: 0x%04X", cpu.getI());
 
-                if (cpu.waitForAKeyPress) ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "STATUS: WAITING FOR KEY");
+                if (cpu.isWaitingForKey()) ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "STATUS: WAITING FOR KEY");
 
                 ImGui::EndTabItem();
             }
@@ -397,22 +402,22 @@ void showDebugger(bool isDebugging, sf::RenderWindow& window, DebuggerViewState&
             ImGui::EndTabBar();
         }
 
-        if (ImGui::Button((emulatorState == EmulatorState::Running) ? "Pause Emulation" : "Resume Emulation"))
+        if (ImGui::Button((cpu.getState() == Chip8::Running) ? "Pause Emulation" : "Resume Emulation"))
         {
-            emulatorState = (emulatorState == EmulatorState::Running) ? EmulatorState::Paused : EmulatorState::Running;
+            cpu.setState((cpu.getState() == Chip8::Running) ? Chip8::Paused : Chip8::Running);
             // if the emulator is running, then we switch to paused and vice-versa.
         }
 
         if (ImGui::Button("Step"))
         {
-            debugger.stepMode = true;
+            debugger.setStepMode(true);
         }
 
         ImGui::End();
     }
 }
 
-std::optional<std::string> romSelection(bool& isDebugging, bool& showFPS, sf::RenderWindow& window)
+std::optional<std::string> romSelection(Debugger& debugger, bool& showFPS, sf::RenderWindow& window)
 {
     namespace fs = std::filesystem;
 
@@ -444,9 +449,9 @@ std::optional<std::string> romSelection(bool& isDebugging, bool& showFPS, sf::Re
                 showFPS ^= 1;
             }
 
-            if (ImGui::MenuItem("Show Debugger", NULL, isDebugging))
+            if (ImGui::MenuItem("Show Debugger", NULL, debugger.isDebugging()))
             {
-                isDebugging ^= 1;
+                debugger.setDebugging((debugger.isDebugging() == true) ? false : true);
             }
 
             if (ImGui::MenuItem("Quit"))
